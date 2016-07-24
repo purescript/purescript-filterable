@@ -1,18 +1,30 @@
 module Data.Filterable
-  ( class Filterable, filterMap, filter
+  ( class Filterable
+  , partitionMap
+  , partition
+  , filterMap
+  , filter
+  , eitherBool
+  , partitionDefault
   , maybeBool
   , filterDefault
   ) where
 
 import Control.Category ((<<<))
 import Control.Bind ((=<<))
-import Data.Functor (class Functor)
+import Data.Semigroup ((<>))
+import Data.Functor (class Functor, (<$>))
+import Data.Foldable (foldl)
 import Data.Maybe (Maybe(..))
+import Data.Either (Either(..))
+import Data.Array (partition, mapMaybe, filter) as Array
 
--- | `Filterable` represents data structures which can be _filtered_.
+-- | `Filterable` represents data structures which can be _partitioned_/_filtered_.
 -- |
--- | - `filterMap` - map over a data structure and filter out
--- | - `filter`
+-- | - `partitionMap` - partition a data structure based on an either predicate.
+-- | - `partition` - partition a data structure based on boolean predicate.
+-- | - `filterMap` - map over a data structure and filter based on a maybe.
+-- | - `filter` - filter a data structure based on a boolean.
 -- |
 -- | Laws:
 -- | - `map f ≡ filterMap (Just <<< f)`
@@ -23,8 +35,26 @@ import Data.Maybe (Maybe(..))
 -- |
 -- | - `filterDefault`
 class (Functor f) <= Filterable f where
+  partitionMap :: forall a l r. (a -> Either l r) -> f a -> { left :: f l,
+                                                              right :: f r }
+
+  partition :: forall a. (a -> Boolean) -> f a -> { no :: f a,
+                                                    yes :: f a }
+
   filterMap :: forall a b. (a -> Maybe b) -> f a -> f b
+
   filter :: forall a. (a -> Boolean) -> f a -> f a
+
+-- | Upgrade a boolean-style predicate to an either-style predicate mapping.
+eitherBool :: forall a. (a -> Boolean) -> a -> Either a a
+eitherBool p x = if p x then Left x else Right x
+
+-- | A default implementation of `partition` using `partitionMap`.
+partitionDefault :: forall f a. Filterable f
+  => (a -> Boolean) -> f a -> { no :: f a, yes :: f a }
+partitionDefault p xs =
+  let o = partitionMap (eitherBool p) xs
+  in {no: o.left, yes: o.right}
 
 -- | Upgrade a boolean-style predicate to a maybe-style predicate mapping.
 maybeBool :: forall a. (a -> Boolean) -> a -> Maybe a
@@ -34,6 +64,26 @@ maybeBool p x = if p x then Just x else Nothing
 filterDefault :: forall f a. Filterable f => (a -> Boolean) -> f a -> f a
 filterDefault = filterMap <<< maybeBool
 
+instance filterableArray :: Filterable Array where
+  partitionMap p = foldl go {left: [], right: []} where
+    go acc x = case p x of
+      Left l -> acc { left = acc.left <> [l] }
+      Right r -> acc { right = acc.right <> [r] }
+
+  partition = Array.partition
+
+  filterMap = Array.mapMaybe
+
+  filter = Array.filter
+
 instance filterableMaybe :: Filterable Maybe where
+  partitionMap p Nothing = { left: Nothing, right: Nothing }
+  partitionMap p (Just x) = case p x of
+    Left a -> { left: Just a, right: Nothing }
+    Right b -> { left: Nothing, right: Just b }
+
+  partition p = partitionDefault p
+
   filterMap = (=<<)
+
   filter p = filterDefault p

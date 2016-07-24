@@ -19,7 +19,9 @@
   ],
   "dependencies": {
     "purescript-foldable-traversable": "^1.0.0",
-    "purescript-identity": "^1.1.0"
+    "purescript-identity": "^1.1.0",
+    "purescript-arrays": "^1.0.0",
+    "purescript-either": "^1.0.0"
   },
   "devDependencies": {
     "purescript-assert": "^1.0.0",
