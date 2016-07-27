@@ -1,16 +1,17 @@
 # purescript-filterable
 
-Classes for filterable and witherable data structures.
+Classes for *filterable* and *witherable* data structures.
 
-Inspired by https://hackage.haskell.org/package/witherable
+Inspired by [witherable](https://hackage.haskell.org/package/witherable) on hackage.
 
 ## Installation
 
-`bower install purescript-filterable`
+```
+bower install purescript-filterable
+```
 
 ## Documentation
 
-Not yet on Pursuit.
+See on [Pursuit](https://pursuit.purescript.org/packages/purescript-filterable/).
 
-Build docs with `npm run build:docs`.
-
+Or build docs with `npm run build:docs`.
