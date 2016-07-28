@@ -6,6 +6,7 @@ module Data.Witherable
   , filterMapByWither
   , traverseByWither
   , wilted
+  , withered
   , module Data.Filterable
   ) where
 
@@ -41,31 +42,34 @@ import Data.Traversable (class Traversable)
 -- | - `filterMapByWither`
 -- | - `traverseByWither`
 class (Filterable t, Traversable t) <= Witherable t where
-  wilt :: forall m a l r.
-    Applicative m => (a -> m (Either l r)) -> t a -> m { left :: t l,
-                                                         right :: t r }
+  wilt :: forall m a l r. Applicative m =>
+    (a -> m (Either l r)) -> t a -> m { left :: t l, right :: t r }
 
-  wither :: forall m a b.
-    Applicative m => (a -> m (Maybe b)) -> t a -> m (t b)
+  wither :: forall m a b. Applicative m =>
+    (a -> m (Maybe b)) -> t a -> m (t b)
 
 -- | A default implementation of `parititonMap` given a `Witherable`.
-partitionMapByWilt :: forall t a l r.
-  Witherable t => (a -> Either l r) -> t a -> { left :: t l, right :: t r }
+partitionMapByWilt :: forall t a l r. Witherable t =>
+  (a -> Either l r) -> t a -> { left :: t l, right :: t r }
 partitionMapByWilt p = runIdentity <<< wilt (Identity <<< p)
 
 -- | A default implementation of `filterMap` given a `Witherable`.
-filterMapByWither :: forall t a b.
-  Witherable t => (a -> Maybe b) -> t a -> t b
+filterMapByWither :: forall t a b. Witherable t =>
+  (a -> Maybe b) -> t a -> t b
 filterMapByWither p = runIdentity <<< wither (Identity <<< p)
 
 -- | A default implementation of `traverse` given a `Witherable`.
-traverseByWither :: forall t m a b.
-  (Witherable t, Applicative m) => (a -> m b) -> t a -> m (t b)
+traverseByWither :: forall t m a b. (Witherable t, Applicative m) =>
+  (a -> m b) -> t a -> m (t b)
 traverseByWither f = wither (map Just <<< f)
 
-wilted :: forall t m l r. (Witherable t, Applicative m)
-  => t (m (Either l r)) -> m { left :: t l, right :: t r }
+wilted :: forall t m l r. (Witherable t, Applicative m) =>
+  t (m (Either l r)) -> m { left :: t l, right :: t r }
 wilted = wilt id
+
+withered :: forall t m x. (Witherable t, Applicative m) =>
+  t (m (Maybe x)) -> m (t x)
+withered = wither id
 
 instance witherableMaybe :: Witherable Maybe where
   wilt p Nothing = pure { left: Nothing, right: Nothing }

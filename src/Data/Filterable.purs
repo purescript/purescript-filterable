@@ -8,9 +8,10 @@ module Data.Filterable
   , partitionDefault
   , maybeBool
   , filterDefault
+  , filtered
   ) where
 
-import Control.Category ((<<<))
+import Control.Category ((<<<), id)
 import Control.Bind ((=<<))
 import Data.Semigroup ((<>))
 import Data.Functor (class Functor, (<$>))
@@ -35,34 +36,43 @@ import Data.Array (partition, mapMaybe, filter) as Array
 -- |
 -- | - `filterDefault`
 class (Functor f) <= Filterable f where
-  partitionMap :: forall a l r. (a -> Either l r) -> f a -> { left :: f l,
-                                                              right :: f r }
+  partitionMap :: forall a l r.
+    (a -> Either l r) -> f a -> { left :: f l, right :: f r }
 
-  partition :: forall a. (a -> Boolean) -> f a -> { no :: f a,
-                                                    yes :: f a }
+  partition :: forall a.
+    (a -> Boolean) -> f a -> { no :: f a, yes :: f a }
 
-  filterMap :: forall a b. (a -> Maybe b) -> f a -> f b
+  filterMap :: forall a b.
+    (a -> Maybe b) -> f a -> f b
 
-  filter :: forall a. (a -> Boolean) -> f a -> f a
+  filter :: forall a.
+    (a -> Boolean) -> f a -> f a
 
 -- | Upgrade a boolean-style predicate to an either-style predicate mapping.
-eitherBool :: forall a. (a -> Boolean) -> a -> Either a a
+eitherBool :: forall a.
+  (a -> Boolean) -> a -> Either a a
 eitherBool p x = if p x then Left x else Right x
 
 -- | A default implementation of `partition` using `partitionMap`.
-partitionDefault :: forall f a. Filterable f
-  => (a -> Boolean) -> f a -> { no :: f a, yes :: f a }
+partitionDefault :: forall f a. Filterable f =>
+  (a -> Boolean) -> f a -> { no :: f a, yes :: f a }
 partitionDefault p xs =
   let o = partitionMap (eitherBool p) xs
   in {no: o.left, yes: o.right}
 
 -- | Upgrade a boolean-style predicate to a maybe-style predicate mapping.
-maybeBool :: forall a. (a -> Boolean) -> a -> Maybe a
+maybeBool :: forall a.
+  (a -> Boolean) -> a -> Maybe a
 maybeBool p x = if p x then Just x else Nothing
 
 -- | A default implementation of `filter` using `filterMap`.
-filterDefault :: forall f a. Filterable f => (a -> Boolean) -> f a -> f a
+filterDefault :: forall f a. Filterable f =>
+  (a -> Boolean) -> f a -> f a
 filterDefault = filterMap <<< maybeBool
+
+filtered :: forall f a. Filterable f =>
+  f (Maybe a) -> f a
+filtered = filterMap id
 
 instance filterableArray :: Filterable Array where
   partitionMap p = foldl go {left: [], right: []} where
