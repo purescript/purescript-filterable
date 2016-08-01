@@ -8,14 +8,18 @@ module Data.Filterable
   , partitionDefault
   , maybeBool
   , filterDefault
+  , partitioned
   , filtered
+  , cleared
   ) where
 
+import Prelude (const)
 import Control.Category ((<<<), id)
 import Control.Bind ((=<<))
 import Data.Semigroup ((<>))
 import Data.Functor (class Functor, (<$>))
 import Data.Foldable (foldl)
+import Data.Monoid (class Monoid, mempty)
 import Data.Maybe (Maybe(..))
 import Data.Either (Either(..))
 import Data.Array (partition, mapMaybe, filter) as Array
@@ -70,9 +74,19 @@ filterDefault :: forall f a. Filterable f =>
   (a -> Boolean) -> f a -> f a
 filterDefault = filterMap <<< maybeBool
 
+partitioned :: forall f l r. Filterable f =>
+  f (Either l r) -> { left :: f l, right :: f r }
+partitioned = partitionMap id
+
+-- | Filter out all the `Nothing` values.
 filtered :: forall f a. Filterable f =>
   f (Maybe a) -> f a
 filtered = filterMap id
+
+-- | Filter out all values.
+cleared :: forall f a b. Filterable f =>
+  f a -> f b
+cleared = filterMap (const Nothing)
 
 instance filterableArray :: Filterable Array where
   partitionMap p = foldl go {left: [], right: []} where
@@ -97,3 +111,19 @@ instance filterableMaybe :: Filterable Maybe where
   filterMap = (=<<)
 
   filter p = filterDefault p
+
+instance filterableEither :: Monoid m => Filterable (Either m) where
+  partitionMap p (Left x) = { left: Left x, right: Left x }
+  partitionMap p (Right x) = case p x of
+    Left a -> { left: Right a, right: Left mempty }
+    Right b -> { left: Left mempty, right: Right b }
+
+  partition p = partitionDefault p
+
+  filterMap p (Left l) = Left l
+  filterMap p (Right r) = case p r of
+    Nothing -> Left mempty
+    Just x -> Right x
+
+  filter p = filterDefault p
+
