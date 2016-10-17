@@ -14,11 +14,12 @@ import Data.Unit (unit)
 import Control.Category ((<<<), id)
 import Control.Applicative (class Applicative, pure)
 import Data.Monoid (class Monoid, mempty)
-import Data.Identity (Identity(..), runIdentity)
+import Data.Identity (Identity(..))
 import Data.Filterable (class Filterable, partitioned, filtered)
 import Data.Functor (map)
 import Data.Either (Either(..))
 import Data.Maybe (Maybe(..))
+import Data.Newtype (unwrap)
 import Data.Traversable (class Traversable, traverse)
 
 -- | `Witherable` represents data structures which can be _partitioned_ with
@@ -55,12 +56,12 @@ class (Filterable t, Traversable t) <= Witherable t where
 -- | A default implementation of `parititonMap` given a `Witherable`.
 partitionMapByWilt :: forall t a l r. Witherable t =>
   (a -> Either l r) -> t a -> { left :: t l, right :: t r }
-partitionMapByWilt p = runIdentity <<< wilt (Identity <<< p)
+partitionMapByWilt p = unwrap <<< wilt (Identity <<< p)
 
 -- | A default implementation of `filterMap` given a `Witherable`.
 filterMapByWither :: forall t a b. Witherable t =>
   (a -> Maybe b) -> t a -> t b
-filterMapByWither p = runIdentity <<< wither (Identity <<< p)
+filterMapByWither p = unwrap <<< wither (Identity <<< p)
 
 -- | A default implementation of `traverse` given a `Witherable`.
 traverseByWither :: forall t m a b. (Witherable t, Applicative m) =>
