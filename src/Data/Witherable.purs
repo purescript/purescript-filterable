@@ -99,13 +99,13 @@ instance witherableMaybe :: Witherable Maybe where
   wither p (Just x) = p x
 
 instance witherableEither :: Monoid m => Witherable (Either m) where
-  wilt p (Left l) = pure { left: Left l, right: Left l }
-  wilt p (Right r) = map convert (p r) where
+  wilt p (Left el) = pure { left: Left el, right: Left el }
+  wilt p (Right er) = map convert (p er) where
     convert (Left l) = { left: Right l, right: Left mempty }
     convert (Right r) = { left: Left mempty, right: Right r }
 
-  wither p (Left l) = pure (Left l)
-  wither p (Right r) = map convert (p r) where
+  wither p (Left el) = pure (Left el)
+  wither p (Right er) = map convert (p er) where
     convert Nothing = Left mempty
     convert (Just r) = Right r
 
