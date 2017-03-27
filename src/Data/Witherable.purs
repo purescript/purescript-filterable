@@ -64,24 +64,24 @@ filterMapByWither :: forall t a b. Witherable t =>
 filterMapByWither p = unwrap <<< wither (Identity <<< p)
 
 -- | A default implementation of `traverse` given a `Witherable`.
-traverseByWither :: forall t m a b. (Witherable t, Applicative m) =>
+traverseByWither :: forall t m a b. Witherable t => Applicative m =>
   (a -> m b) -> t a -> m (t b)
 traverseByWither f = wither (map Just <<< f)
 
 -- | A default implementation of `wither` using `wilt`.
-witherDefault :: forall t m a b. (Witherable t, Applicative m) =>
+witherDefault :: forall t m a b. Witherable t => Applicative m =>
   (a -> m (Maybe b)) -> t a -> m (t b)
 witherDefault p xs = map _.right (wilt (map convert <<< p) xs) where
   convert Nothing = Left unit
   convert (Just y) = Right y
 
 -- | Partition between `Left` and `Right` values - with effects in `m`.
-wilted :: forall t m l r. (Witherable t, Applicative m) =>
+wilted :: forall t m l r. Witherable t => Applicative m =>
   t (m (Either l r)) -> m { left :: t l, right :: t r }
 wilted = wilt id
 
 -- | Filter out all the `Nothing` values - with effects in `m`.
-withered :: forall t m x. (Witherable t, Applicative m) =>
+withered :: forall t m x. Witherable t => Applicative m =>
   t (m (Maybe x)) -> m (t x)
 withered = wither id
 
