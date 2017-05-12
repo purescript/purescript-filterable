@@ -10,17 +10,18 @@ module Data.Witherable
   , module Data.Filterable
   ) where
 
-import Data.Unit (unit)
-import Control.Category ((<<<), id)
 import Control.Applicative (class Applicative, pure)
-import Data.Monoid (class Monoid, mempty)
-import Data.Identity (Identity(..))
+import Control.Category ((<<<), id)
+import Data.Either (Either(..))
 import Data.Filterable (class Filterable, partitioned, filtered)
 import Data.Functor (map)
-import Data.Either (Either(..))
+import Data.Identity (Identity(..))
+import Data.List (List)
 import Data.Maybe (Maybe(..))
+import Data.Monoid (class Monoid, mempty)
 import Data.Newtype (unwrap)
 import Data.Traversable (class Traversable, traverse)
+import Data.Unit (unit)
 
 -- | `Witherable` represents data structures which can be _partitioned_ with
 -- | effects in some `Applicative` functor.
@@ -89,6 +90,10 @@ instance witherableArray :: Witherable Array where
   wilt p xs = map partitioned (traverse p xs)
   wither p xs = map filtered (traverse p xs)
 
+instance witherableList :: Witherable List where
+  wilt p xs = map partitioned (traverse p xs)
+  wither p xs = map filtered (traverse p xs)
+
 instance witherableMaybe :: Witherable Maybe where
   wilt p Nothing = pure { left: Nothing, right: Nothing }
   wilt p (Just x) = map convert (p x) where
@@ -108,4 +113,3 @@ instance witherableEither :: Monoid m => Witherable (Either m) where
   wither p (Right er) = map convert (p er) where
     convert Nothing = Left mempty
     convert (Just r) = Right r
-

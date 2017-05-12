@@ -3,11 +3,21 @@ module Test.Main where
 import Prelude
 import Control.Monad.Eff (Eff)
 import Control.Monad.Eff.Console (CONSOLE, log)
-import Data.Filterable (filter, filterMap)
+import Data.Filterable (filter, filterMap, partition)
 import Data.Identity (Identity(Identity))
+import Data.List (fromFoldable)
 import Data.Maybe (Maybe(..))
 import Data.Witherable (wither)
 import Test.Assert (ASSERT, assert)
+
+testEqNoYes     :: ∀ a. (Ord a) => { no :: a, yes :: a } -> { no :: a, yes :: a } -> Boolean
+testEqNoYes { no: n1, yes: y1 } { no: n2, yes: y2 } =
+    n1 == n2 && y1 == y2
+
+testEqLeftRight :: ∀ a. (Ord a) => { left :: a, right :: a } -> { left :: a, right :: a } -> Boolean
+testEqLeftRight { left: l1, right: r1 } { left: l2, right: r2 } =
+    l1 == l2 && r1 == r2
+
 
 main :: Eff (console :: CONSOLE, assert :: ASSERT) Unit
 main = do
@@ -26,5 +36,18 @@ main = do
     assert $ wither pred (Just 6) == Identity (Just 60)
     assert $ wither pred (Just 5) == Identity Nothing
     assert $ wither pred Nothing == Identity Nothing
+
+  log "Test filterableList instance" *> do
+    let pred x = if x > 5 then Just (x * 10) else Nothing
+    let testlist = fromFoldable [1,2,3,4,5,6,7,8,9]
+    assert $ filterMap pred testlist == fromFoldable [60,70,80,90]
+    assert $ filter (_ > 5) testlist == fromFoldable [6,7,8,9]
+    assert $ partition (_ > 5) testlist `testEqNoYes` { no: fromFoldable [1,2,3,4,5], yes: fromFoldable [6,7,8,9]}
+
+  log "Test filterableArray instance" *> do
+    let pred x = if x > 5 then Just (x * 10) else Nothing
+    assert $ filterMap pred [1,2,3,4,5,6,7,8,9] == [60,70,80,90]
+    assert $ filter (_ > 5) [1,2,3,4,5,6,7,8,9] == [6,7,8,9]
+    assert $ partition (_ > 5) [1,2,3,4,5,6,7,8,9] `testEqNoYes` { no: [1,2,3,4,5], yes: [6,7,8,9]}
 
   log "All done!"
