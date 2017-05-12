@@ -19,7 +19,7 @@ import Data.Array (partition, mapMaybe, filter) as Array
 import Data.Either (Either(..))
 import Data.Foldable (foldl, foldr)
 import Data.Functor (class Functor)
-import Data.List (List(..), filter, mapMaybe, snoc) as List
+import Data.List (List(..), filter, mapMaybe) as List
 import Data.Maybe (Maybe(..))
 import Data.Monoid (class Monoid, mempty)
 import Data.Semigroup ((<>))
@@ -130,11 +130,11 @@ instance filterableEither :: Monoid m => Filterable (Either m) where
 
 instance filterableList :: Filterable List.List where
   -- partitionMap :: forall a l r. (a -> Either l r) -> List a -> { left :: List l, right :: List r }
-  partitionMap p xs = foldl select { left: List.Nil, right: List.Nil } xs
+  partitionMap p xs = foldr select { left: List.Nil, right: List.Nil } xs
     where
-        select { left, right } x = case p x of
-                                     Left l -> { left: List.snoc left l, right }
-                                     Right r -> { left, right: List.snoc right r }
+        select x { left, right } = case p x of
+                                     Left l -> { left: List.Cons l left, right }
+                                     Right r -> { left, right: List.Cons r right }
 
   -- partition :: forall a. (a -> Boolean) -> List a -> { no :: List a, yes :: List a }
   partition p xs = foldr select { no: List.Nil, yes: List.Nil } xs
