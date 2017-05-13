@@ -55,7 +55,7 @@ class (Functor f) <= Filterable f where
 -- | Upgrade a boolean-style predicate to an either-style predicate mapping.
 eitherBool :: forall a.
   (a -> Boolean) -> a -> Either a a
-eitherBool p x = if p x then Left x else Right x
+eitherBool p x = if p x then Right x else Left x
 
 -- | A default implementation of `partition` using `partitionMap`.
 partitionDefault :: forall f a. Filterable f =>
