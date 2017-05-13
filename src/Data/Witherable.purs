@@ -18,10 +18,12 @@ import Data.Functor (map)
 import Data.Identity (Identity(..))
 import Data.List (List)
 import Data.Maybe (Maybe(..))
+import Data.Map (Map)
 import Data.Monoid (class Monoid, mempty)
 import Data.Newtype (unwrap)
 import Data.Traversable (class Traversable, traverse)
 import Data.Unit (unit)
+import Prelude (class Ord)
 
 -- | `Witherable` represents data structures which can be _partitioned_ with
 -- | effects in some `Applicative` functor.
@@ -91,6 +93,10 @@ instance witherableArray :: Witherable Array where
   wither p xs = map filtered (traverse p xs)
 
 instance witherableList :: Witherable List where
+  wilt p xs = map partitioned (traverse p xs)
+  wither p xs = map filtered (traverse p xs)
+
+instance witherableMap :: Ord k => Witherable (Map k) where
   wilt p xs = map partitioned (traverse p xs)
   wither p xs = map filtered (traverse p xs)
 

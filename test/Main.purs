@@ -8,6 +8,8 @@ import Data.Filterable (filter, filterMap, partition, partitionMap)
 import Data.Identity (Identity(Identity))
 import Data.List (List(Nil), (:))
 import Data.Maybe (Maybe(..))
+import Data.Map (fromFoldable) as Map
+import Data.Tuple (Tuple(..))
 import Data.Witherable (wither)
 import Test.Assert (ASSERT, assert)
 
@@ -52,5 +54,17 @@ main = do
     assert $ filterMap pred [1,2,3,4,5,6,7,8,9] == [60,70,80,90]
     assert $ filter (_ > 5) [1,2,3,4,5,6,7,8,9] == [6,7,8,9]
     assert $ partition (_ > 5) [1,2,3,4,5,6,7,8,9] `testEqNoYes` { no: [1,2,3,4,5], yes: [6,7,8,9]}
+
+  log "Test filterableMap instance" *> do
+    let pred x = if x > 2 then Just (x * 10) else Nothing
+    let predE x = if x > 2 then Right (x * 10) else Left x
+    let m = Map.fromFoldable
+    let xs = m [Tuple 1 1, Tuple 2 2, Tuple 3 3, Tuple 4 4]
+    assert $ filterMap pred xs == m [Tuple 3 30, Tuple 4 40]
+    assert $ filter (_ > 2) xs == m [Tuple 3 3, Tuple 4 4]
+    assert $ partition (_ > 2) xs `testEqNoYes` { no: m [Tuple 1 1, Tuple 2 2]
+                                                , yes: m [Tuple 3 3, Tuple 4 4] }
+    assert $ partitionMap predE xs `testEqLeftRight` { left: m [Tuple 1 1, Tuple 2 2]
+                                                     , right: m [Tuple 3 30, Tuple 4 40] }
 
   log "All done!"
