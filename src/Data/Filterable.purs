@@ -13,16 +13,17 @@ module Data.Filterable
   , cleared
   ) where
 
-import Prelude (const)
-import Control.Category ((<<<), id)
 import Control.Bind ((=<<))
-import Data.Semigroup ((<>))
-import Data.Functor (class Functor)
-import Data.Foldable (foldl)
-import Data.Monoid (class Monoid, mempty)
-import Data.Maybe (Maybe(..))
-import Data.Either (Either(..))
+import Control.Category ((<<<), id)
 import Data.Array (partition, mapMaybe, filter) as Array
+import Data.Either (Either(..))
+import Data.Foldable (foldl, foldr)
+import Data.Functor (class Functor)
+import Data.List (List(..), filter, mapMaybe) as List
+import Data.Maybe (Maybe(..))
+import Data.Monoid (class Monoid, mempty)
+import Data.Semigroup ((<>))
+import Prelude (const)
 
 -- | `Filterable` represents data structures which can be _partitioned_/_filtered_.
 -- |
@@ -127,3 +128,24 @@ instance filterableEither :: Monoid m => Filterable (Either m) where
 
   filter p = filterDefault p
 
+instance filterableList :: Filterable List.List where
+  -- partitionMap :: forall a l r. (a -> Either l r) -> List a -> { left :: List l, right :: List r }
+  partitionMap p xs = foldr select { left: List.Nil, right: List.Nil } xs
+    where
+        select x { left, right } = case p x of
+                                     Left l -> { left: List.Cons l left, right }
+                                     Right r -> { left, right: List.Cons r right }
+
+  -- partition :: forall a. (a -> Boolean) -> List a -> { no :: List a, yes :: List a }
+  partition p xs = foldr select { no: List.Nil, yes: List.Nil } xs
+    where
+        -- select :: (a -> Boolean) -> a -> { no :: List a, yes :: List a } -> { no :: List a, yes :: List a }
+        select x { no, yes } = if p x
+                                 then { no, yes: List.Cons x yes }
+                                 else { no: List.Cons x no, yes }
+
+  -- filterMap :: forall a b. (a -> Maybe b) -> List a -> List b
+  filterMap p = List.mapMaybe p
+
+  -- filter :: forall a. (a -> Boolean) -> List a -> List a
+  filter = List.filter

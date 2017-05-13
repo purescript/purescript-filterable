@@ -21,7 +21,8 @@
     "purescript-foldable-traversable": "^3.0.0",
     "purescript-identity": "^3.0.0",
     "purescript-arrays": "^4.0.0",
-    "purescript-either": "^3.0.0"
+    "purescript-either": "^3.0.0",
+    "purescript-lists": "^4.1.1"
   },
   "devDependencies": {
     "purescript-assert": "^3.0.0",
