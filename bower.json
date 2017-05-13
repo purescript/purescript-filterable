@@ -22,7 +22,8 @@
     "purescript-identity": "^3.0.0",
     "purescript-arrays": "^4.0.0",
     "purescript-either": "^3.0.0",
-    "purescript-lists": "^4.1.1"
+    "purescript-lists": "^4.1.1",
+    "purescript-maps": "^3.0.0"
   },
   "devDependencies": {
     "purescript-assert": "^3.0.0",
