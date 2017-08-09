@@ -46,7 +46,12 @@ import Prelude (const, class Ord)
 -- |
 -- | Default implementations are provided by the following functions:
 -- |
+-- | - `partitionDefault`
+-- | - `partitionDefaultFilter`
+-- | - `partitionDefaultFilterMap`
 -- | - `filterDefault`
+-- | - `filterDefaultPartition`
+-- | - `filterDefaultPartitionMap`
 class (Functor f) <= Filterable f where
   partitionMap :: forall a l r.
     (a -> Either l r) -> f a -> { left :: f l, right :: f r }
