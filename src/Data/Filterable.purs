@@ -6,8 +6,12 @@ module Data.Filterable
   , filter
   , eitherBool
   , partitionDefault
+  , partitionDefaultFilter
+  , partitionDefaultFilterMap
   , maybeBool
   , filterDefault
+  , filterDefaultPartition
+  , filterDefaultPartitionMap
   , partitioned
   , filtered
   , cleared
@@ -19,9 +23,10 @@ import Data.Array (partition, mapMaybe, filter) as Array
 import Data.Either (Either(..))
 import Data.Foldable (foldl, foldr)
 import Data.Functor (class Functor)
+import Data.HeytingAlgebra (not)
 import Data.List (List(..), filter, mapMaybe) as List
-import Data.Maybe (Maybe(..))
 import Data.Map (Map, empty, insert, alter, toUnfoldable) as Map
+import Data.Maybe (Maybe(..))
 import Data.Monoid (class Monoid, mempty)
 import Data.Semigroup ((<>))
 import Data.Tuple (Tuple(..))
@@ -60,6 +65,11 @@ eitherBool :: forall a.
   (a -> Boolean) -> a -> Either a a
 eitherBool p x = if p x then Right x else Left x
 
+-- | Upgrade a boolean-style predicate to a maybe-style predicate mapping.
+maybeBool :: forall a.
+  (a -> Boolean) -> a -> Maybe a
+maybeBool p x = if p x then Just x else Nothing
+
 -- | A default implementation of `partition` using `partitionMap`.
 partitionDefault :: forall f a. Filterable f =>
   (a -> Boolean) -> f a -> { no :: f a, yes :: f a }
@@ -67,15 +77,36 @@ partitionDefault p xs =
   let o = partitionMap (eitherBool p) xs
   in {no: o.left, yes: o.right}
 
--- | Upgrade a boolean-style predicate to a maybe-style predicate mapping.
-maybeBool :: forall a.
-  (a -> Boolean) -> a -> Maybe a
-maybeBool p x = if p x then Just x else Nothing
+-- | A default implementation of `partition` using `filter`. Note that this is
+-- | almost certainly going to be suboptimal compared to direct implementations.
+partitionDefaultFilter :: forall f a. Filterable f =>
+  (a -> Boolean) -> f a -> { no :: f a, yes :: f a }
+partitionDefaultFilter p xs = { yes: filter p xs, no: filter (not p) xs }
+
+-- | A default implementation of `partition` using `filterMap`. Note that this
+-- | is almost certainly going to be suboptimal compared to direct
+-- | implementations.
+partitionDefaultFilterMap :: forall f a. Filterable f =>
+  (a -> Boolean) -> f a -> { no :: f a, yes :: f a }
+partitionDefaultFilterMap p xs =
+  { yes: filterMap (maybeBool p) xs
+  , no: filterMap (maybeBool (not p)) xs
+  }
 
 -- | A default implementation of `filter` using `filterMap`.
 filterDefault :: forall f a. Filterable f =>
   (a -> Boolean) -> f a -> f a
 filterDefault = filterMap <<< maybeBool
+
+-- | A default implementation of `filter` using `partition`.
+filterDefaultPartition :: forall f a. Filterable f =>
+  (a -> Boolean) -> f a -> f a
+filterDefaultPartition p xs = (partition p xs).yes
+
+-- | A default implementation of `filter` using `partitionMap`.
+filterDefaultPartitionMap :: forall f a. Filterable f =>
+  (a -> Boolean) -> f a -> f a
+filterDefaultPartitionMap p xs = (partitionMap (eitherBool p) xs).right
 
 partitioned :: forall f l r. Filterable f =>
   f (Either l r) -> { left :: f l, right :: f r }
@@ -174,4 +205,3 @@ instance filterableMap :: Ord k => Filterable (Map.Map k) where
       select (Tuple k x) m = Map.alter (const (p x)) k m
 
   filter p = filterDefault p
-
