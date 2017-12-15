@@ -6,6 +6,7 @@ module Data.Compactable
   , separateDefault
   ) where
 
+import Control.Alternative (class Alternative, empty, (<|>))
 import Control.Applicative (class Applicative, class Apply, apply, pure)
 import Control.Bind (class Bind, bind, join)
 import Data.Array as Array
@@ -16,7 +17,7 @@ import Data.Functor (class Functor, map, (<$>))
 import Data.List as List
 import Data.Map as Map
 import Data.Maybe (Maybe(..))
-import Data.Monoid (class Monoid, mempty, (<>))
+import Data.Monoid (class Monoid, mempty)
 import Data.Traversable (class Traversable, sequence, traverse)
 import Data.Tuple (Tuple(..))
 import Prelude (class Ord, unit, (<<<))
@@ -70,16 +71,14 @@ instance compactableList :: Compactable List.List where
 
 separateSequence
   :: forall f l r
-   . Monoid (f l)
-  => Monoid (f r)
+   . Alternative f
   => Foldable f
-  => Applicative f
   => Compactable f
   => f (Either l r) -> { left :: f l, right :: f r }
-separateSequence = foldl go { left: mempty, right: mempty } where
-    go acc e = case e of
-      Left l  -> acc { left = acc.left <> pure l }
-      Right r -> acc { right = acc.right <> pure r }
+separateSequence = foldl go { left: empty, right: empty } where
+    go acc = case _ of
+      Left l  -> acc { left = acc.left <|> pure l }
+      Right r -> acc { right = acc.right <|> pure r }
 
 instance compactableMap :: Ord k => Compactable (Map.Map k) where
   compact = (Map.fromFoldable :: forall v. Array (Tuple k v) -> Map.Map k v)
