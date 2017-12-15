@@ -11,20 +11,23 @@ import Control.Applicative (class Applicative, class Apply, apply, pure)
 import Control.Bind (class Bind, bind, join)
 import Data.Array as Array
 import Data.Either (Either(Right, Left), hush, note)
-import Data.Foldable (class Foldable, foldl)
+import Data.Foldable (class Foldable, foldl, foldr)
 import Data.Function (($))
 import Data.Functor (class Functor, map, (<$>))
 import Data.List as List
 import Data.Map as Map
 import Data.Maybe (Maybe(..))
 import Data.Monoid (class Monoid, mempty)
-import Data.Traversable (class Traversable, sequence, traverse)
+import Data.Traversable (class Traversable, traverse)
 import Data.Tuple (Tuple(..))
-import Prelude (class Ord, unit, (<<<))
+import Prelude (class Ord, const, unit, (<<<))
 
 class Compactable f where
-  compact :: forall a. f (Maybe a) -> f a
-  separate :: forall l r. f (Either l r) -> { left :: f l, right :: f r }
+  compact :: forall a.
+    f (Maybe a) -> f a
+
+  separate :: forall l r.
+    f (Either l r) -> { left :: f l, right :: f r }
 
 compactDefault :: forall f a. Functor f => Compactable f => f (Maybe a) -> f a
 compactDefault = _.right <<< separate <<< map (note unit)
@@ -81,20 +84,18 @@ separateSequence = foldl go { left: empty, right: empty } where
       Right r -> acc { right = acc.right <|> pure r }
 
 instance compactableMap :: Ord k => Compactable (Map.Map k) where
-  compact = (Map.fromFoldable :: forall v. Array (Tuple k v) -> Map.Map k v)
-            <<< compact
-            <<< map sequence
-            <<< Map.toUnfoldable
-
-  separate m = { left: Map.fromFoldable sep.left
-               , right: Map.fromFoldable sep.right
-               }
+  compact = foldr select Map.empty <<< mapToList
     where
-      sep = separate $ map distributeEither $
-            (Map.toUnfoldable :: forall v. Map.Map k v -> Array (Tuple k v)) m
-      distributeEither (Tuple k e) = case e of
-        Left l  -> Left (Tuple k l)
-        Right r -> Right (Tuple k r)
+      select (Tuple k x) m = Map.alter (const x) k m
+
+  separate = foldr select { left: Map.empty, right: Map.empty } <<< mapToList
+    where
+      select (Tuple k v) { left, right } = case v of
+        Left l -> { left: Map.insert k l left, right }
+        Right r -> { left: left, right: Map.insert k r right }
+
+mapToList :: forall k v. Ord k => Map.Map k v -> List.List (Tuple k v)
+mapToList = Map.toUnfoldable
 
 mapMaybe
   :: forall f a b
