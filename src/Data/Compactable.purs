@@ -7,7 +7,7 @@ module Data.Compactable
   ) where
 
 import Control.Alternative (class Alternative, empty, (<|>))
-import Control.Applicative (class Applicative, class Apply, apply, pure)
+import Control.Applicative (class Apply, apply, pure)
 import Control.Bind (class Bind, bind, join)
 import Data.Array as Array
 import Data.Either (Either(Right, Left), hush, note)
@@ -18,7 +18,6 @@ import Data.List as List
 import Data.Map as Map
 import Data.Maybe (Maybe(..))
 import Data.Monoid (class Monoid, mempty)
-import Data.Traversable (class Traversable, traverse)
 import Data.Tuple (Tuple(..))
 import Prelude (class Ord, const, unit, (<<<))
 
@@ -124,19 +123,3 @@ bindEither
   => Compactable m
   => m a -> (a -> m (Either l r)) -> { left :: m l, right :: m r }
 bindEither x = separate <<< bind x
-
-traverseMaybe
-  :: forall t m a b
-   . Applicative m
-  => Traversable t
-  => Compactable t
-  => (a -> m (Maybe b)) -> t a -> m (t b)
-traverseMaybe p = map compact <<< traverse p
-
-traverseEither
-  :: forall t m a l r
-   . Applicative m
-  => Traversable t
-  => Compactable t
-  => (a -> m (Either l r)) -> t a -> m { left :: t l, right :: t r }
-traverseEither p = map separate <<< traverse p
