@@ -8,21 +8,23 @@ module Data.Filterable
   , partitionDefault
   , partitionDefaultFilter
   , partitionDefaultFilterMap
+  , partitionMapDefault
   , maybeBool
   , filterDefault
   , filterDefaultPartition
   , filterDefaultPartitionMap
-  , partitioned
-  , filtered
+  , filterMapDefault
   , cleared
+  , module Data.Compactable
   ) where
 
 import Control.Bind ((=<<))
-import Control.Category ((<<<), id)
+import Control.Category ((<<<))
 import Data.Array (partition, mapMaybe, filter) as Array
+import Data.Compactable (class Compactable, compact, separate)
 import Data.Either (Either(..))
 import Data.Foldable (foldl, foldr)
-import Data.Functor (class Functor)
+import Data.Functor (class Functor, map)
 import Data.HeytingAlgebra (not)
 import Data.List (List(..), filter, mapMaybe) as List
 import Data.Map (Map, empty, insert, alter, toUnfoldable) as Map
@@ -49,10 +51,12 @@ import Prelude (const, class Ord)
 -- | - `partitionDefault`
 -- | - `partitionDefaultFilter`
 -- | - `partitionDefaultFilterMap`
+-- | - `partitionMapDefault`
 -- | - `filterDefault`
 -- | - `filterDefaultPartition`
 -- | - `filterDefaultPartitionMap`
-class (Functor f) <= Filterable f where
+-- | - `filterMapDefault`
+class (Compactable f, Functor f) <= Filterable f where
   partitionMap :: forall a l r.
     (a -> Either l r) -> f a -> { left :: f l, right :: f r }
 
@@ -75,6 +79,12 @@ maybeBool :: forall a.
   (a -> Boolean) -> a -> Maybe a
 maybeBool p x = if p x then Just x else Nothing
 
+-- | A default implementation of `partitionMap` using `separate`. Note that this is
+-- | almost certainly going to be suboptimal compared to direct implementations.
+partitionMapDefault :: forall f a l r. Filterable f =>
+  (a -> Either l r) -> f a -> { left :: f l, right :: f r }
+partitionMapDefault p = separate <<< map p
+
 -- | A default implementation of `partition` using `partitionMap`.
 partitionDefault :: forall f a. Filterable f =>
   (a -> Boolean) -> f a -> { no :: f a, yes :: f a }
@@ -87,6 +97,12 @@ partitionDefault p xs =
 partitionDefaultFilter :: forall f a. Filterable f =>
   (a -> Boolean) -> f a -> { no :: f a, yes :: f a }
 partitionDefaultFilter p xs = { yes: filter p xs, no: filter (not p) xs }
+
+-- | A default implementation of `filterMap` using `separate`. Note that this is
+-- | almost certainly going to be suboptimal compared to direct implementations.
+filterMapDefault :: forall f a b. Filterable f =>
+  (a -> Maybe b) -> f a -> f b
+filterMapDefault p = compact <<< map p
 
 -- | A default implementation of `partition` using `filterMap`. Note that this
 -- | is almost certainly going to be suboptimal compared to direct
@@ -112,15 +128,6 @@ filterDefaultPartition p xs = (partition p xs).yes
 filterDefaultPartitionMap :: forall f a. Filterable f =>
   (a -> Boolean) -> f a -> f a
 filterDefaultPartitionMap p xs = (partitionMap (eitherBool p) xs).right
-
-partitioned :: forall f l r. Filterable f =>
-  f (Either l r) -> { left :: f l, right :: f r }
-partitioned = partitionMap id
-
--- | Filter out all the `Nothing` values.
-filtered :: forall f a. Filterable f =>
-  f (Maybe a) -> f a
-filtered = filterMap id
 
 -- | Filter out all values.
 cleared :: forall f a b. Filterable f =>
