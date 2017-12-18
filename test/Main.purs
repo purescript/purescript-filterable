@@ -11,9 +11,8 @@ import Data.Identity (Identity(Identity))
 import Data.List (List(Nil), (:))
 import Data.Map (fromFoldable) as Map
 import Data.Maybe (Maybe(..))
-import Data.Tuple (Tuple(..))
 import Data.Tuple.Nested ((/\))
-import Data.Witherable (wither)
+import Data.Witherable (wilt, wither)
 import Test.Assert (ASSERT, assert)
 
 testEqNoYes :: ∀ a. (Ord a) => { no :: a, yes :: a } -> { no :: a, yes :: a } -> Boolean
@@ -88,7 +87,6 @@ testCompactable = do
 testFilterable :: Eff (console :: CONSOLE, assert :: ASSERT) Unit
 testFilterable = do
   log "Test filterableMaybe instance" *> do
-    let pred x = if x > 5 then Just (x * 10) else Nothing
     assert $ filterMap pred (Just 6) == Just 60
     assert $ filterMap pred (Just 5) == Nothing
     assert $ filterMap pred Nothing == Nothing
@@ -98,7 +96,6 @@ testFilterable = do
     assert $ filter (_ > 5) Nothing == Nothing
 
   log "Test filterableList instance" *> do
-    let pred x = if x > 5 then Just (x * 10) else Nothing
     let testlist = (1 : 2 : 3 : 4 : 5 : 6 : 7 : 8 : 9 : Nil)
     assert $ filterMap pred testlist == (60 : 70 : 80 : 90 : Nil)
     assert $ filter (_ > 5) testlist == (6 : 7 : 8 : 9 : Nil)
@@ -107,30 +104,74 @@ testFilterable = do
     assert $ (partitionMap Left $ (1 : 2 : 3 : 4 : 5 : Nil)).left == (1 : 2 : 3 : 4 : 5 : Nil)
 
   log "Test filterableArray instance" *> do
-    let pred x = if x > 5 then Just (x * 10) else Nothing
     assert $ filterMap pred [1,2,3,4,5,6,7,8,9] == [60,70,80,90]
     assert $ filter (_ > 5) [1,2,3,4,5,6,7,8,9] == [6,7,8,9]
     assert $ partition (_ > 5) [1,2,3,4,5,6,7,8,9] `testEqNoYes` { no: [1,2,3,4,5], yes: [6,7,8,9]}
-
   log "Test filterableMap instance" *> do
-    let pred x = if x > 2 then Just (x * 10) else Nothing
-    let predE x = if x > 2 then Right (x * 10) else Left x
+    let predE x = if x > 5 then Right (x * 10) else Left x
     let m = Map.fromFoldable
-    let xs = m [Tuple 1 1, Tuple 2 2, Tuple 3 3, Tuple 4 4]
-    assert $ filterMap pred xs == m [Tuple 3 30, Tuple 4 40]
-    assert $ filter (_ > 2) xs == m [Tuple 3 3, Tuple 4 4]
-    assert $ partition (_ > 2) xs `testEqNoYes` { no: m [Tuple 1 1, Tuple 2 2]
-                                                , yes: m [Tuple 3 3, Tuple 4 4] }
-    assert $ partitionMap predE xs `testEqLeftRight` { left: m [Tuple 1 1, Tuple 2 2]
-                                                     , right: m [Tuple 3 30, Tuple 4 40] }
+    let xs = m [4 /\ 4, 5 /\ 5, 6 /\ 6, 7 /\ 7]
+    assert $ filterMap pred xs == m [6 /\ 60, 7 /\ 70]
+    assert $ filter (_ > 5) xs == m [6 /\ 6, 7 /\ 7]
+    assert $ partition (_ > 5) xs `testEqNoYes` { no: m [4 /\ 4, 5 /\ 5]
+                                                , yes: m [6 /\ 6, 7 /\ 7] }
+    assert $ partitionMap predE xs `testEqLeftRight` { left: m [4 /\ 4, 5 /\ 5]
+                                                     , right: m [6 /\ 60, 7 /\ 70] }
+  where
+    pred x = if x > 5 then Just (x * 10) else Nothing
 
 testWitherable :: Eff (console :: CONSOLE, assert :: ASSERT) Unit
 testWitherable = do
    log "Test witherableMaybe instance" *> do
-    let pred x = if x > 5 then Identity (Just (x * 10)) else Identity Nothing
-    assert $ wither pred (Just 6) == Identity (Just 60)
-    assert $ wither pred (Just 5) == Identity Nothing
-    assert $ wither pred Nothing == Identity Nothing
+     assert $ map _.right (wilt predE (Just 6)) == Identity (Just 60)
+     assert $ map _.left (wilt predE (Just 5)) == Identity (Just 5)
+     assert $ map _.right (wilt predE Nothing) == Identity Nothing
+
+     assert $ wither predM (Just 6) == Identity (Just 60)
+     assert $ wither predM (Just 5) == Identity Nothing
+     assert $ wither predM Nothing == Identity Nothing
+
+   log "Test witherableEither instance" *> do
+     assert $ map _.right (wilt predE (Right 6 :: Either (Array Int) Int)) == Identity (Right 60)
+     assert $ map _.left (wilt predE (Right 5 :: Either (Array Int) Int)) == Identity (Right 5)
+     assert $ map _.right (wilt predE (Left [] :: Either (Array Int) Int)) == Identity (Left [])
+
+     assert $ wither predM (Just 6) == Identity (Just 60)
+     assert $ wither predM (Just 5) == Identity Nothing
+     assert $ wither predM Nothing == Identity Nothing
+
+   log "Test witherableList instance" *> do
+     let testlist = (1 : 2 : 3 : 4 : 5 : 6 : 7 : 8 : 9 : Nil)
+     let resultWilt = wilt predE testlist
+     assert $ map _.right resultWilt == Identity (60 : 70 : 80 : 90 : Nil)
+     assert $ map _.left resultWilt == Identity (1 : 2 : 3 : 4 : 5 : Nil)
+     assert $ map _.right (wilt predE Nil) == Identity Nil
+
+     assert $ wither predM testlist == Identity (60 : 70 : 80 : 90 : Nil)
+     assert $ wither predM Nil == Identity Nil
+
+   log "Test witherableArray instance" *> do
+     let testarray = [1, 2, 3, 4, 5, 6, 7, 8, 9]
+     let resultWilt = wilt predE testarray
+     assert $ map _.right resultWilt == Identity [60,  70, 80, 90]
+     assert $ map _.left resultWilt == Identity [1, 2, 3, 4, 5]
+     assert $ map _.right (wilt predE []) == Identity []
+
+     assert $ wither predM testarray == Identity [60, 70, 80, 90]
+     assert $ wither predM [] == Identity []
+
+   log "Test witherableMap instance" *> do
+     let m = Map.fromFoldable
+     let xs = m [4 /\ 4, 5 /\ 5, 6 /\ 6, 7 /\ 7]
+     let resultWilt = wilt predE xs
+     assert $ map _.right resultWilt == Identity (m [6 /\ 60, 7 /\ 70])
+     assert $ map _.left resultWilt == Identity (m [4 /\ 4, 5 /\ 5])
+
+     assert $ wither predM xs == Identity (m [6 /\ 60, 7 /\ 70])
+
+   where
+     predM x = if x > 5 then Identity (Just (x * 10)) else Identity Nothing
+     predE x = if x > 5 then Identity (Right (x * 10)) else Identity (Left x)
 
 main :: Eff (console :: CONSOLE, assert :: ASSERT) Unit
 main = do
