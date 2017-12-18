@@ -7,22 +7,23 @@ module Data.Witherable
   , traverseByWither
   , wilted
   , withered
-  , module Data.Filterable
+  , witherDefault
+  , wiltDefault
+  , module Data.Compactable
   ) where
 
 import Control.Applicative (class Applicative, pure)
 import Control.Category ((<<<), id)
+import Data.Compactable (class Compactable, compact, separate)
 import Data.Either (Either(..))
-import Data.Filterable (class Filterable, partitioned, filtered)
 import Data.Functor (map)
 import Data.Identity (Identity(..))
 import Data.List (List)
-import Data.Maybe (Maybe(..))
 import Data.Map (Map)
+import Data.Maybe (Maybe(..))
 import Data.Monoid (class Monoid, mempty)
 import Data.Newtype (unwrap)
 import Data.Traversable (class Traversable, traverse)
-import Data.Unit (unit)
 import Prelude (class Ord)
 
 -- | `Witherable` represents data structures which can be _partitioned_ with
@@ -35,8 +36,8 @@ import Prelude (class Ord)
 -- |
 -- | - Identity: `wither (pure <<< Just) ≡ pure`
 -- | - Composition: `Compose <<< map (wither f) <<< wither g ≡ wither (Compose <<< map (wither f) <<< g)`
--- | - Multipass partition: `wilt p ≡ map partitioned <<< traverse p`
--- | - Multipass filter: `wither p ≡ map filtered <<< traverse p`
+-- | - Multipass partition: `wilt p ≡ map separate <<< traverse p`
+-- | - Multipass filter: `wither p ≡ map compact <<< traverse p`
 -- |
 -- | Superclass equivalences:
 -- |
@@ -46,15 +47,27 @@ import Prelude (class Ord)
 -- |
 -- | Default implementations are provided by the following functions:
 -- |
+-- | - `wiltDefault`
+-- | - `witherDefault`
 -- | - `partitionMapByWilt`
 -- | - `filterMapByWither`
 -- | - `traverseByWither`
-class (Filterable t, Traversable t) <= Witherable t where
+class (Compactable t, Traversable t) <= Witherable t where
   wilt :: forall m a l r. Applicative m =>
     (a -> m (Either l r)) -> t a -> m { left :: t l, right :: t r }
 
   wither :: forall m a b. Applicative m =>
     (a -> m (Maybe b)) -> t a -> m (t b)
+
+-- | A default implementation of `wilt` using `separate`
+wiltDefault :: forall t m a l r. Witherable t => Applicative m =>
+  (a -> m (Either l r)) -> t a -> m { left :: t l, right :: t r }
+wiltDefault p = map separate <<< traverse p
+
+-- | A default implementation of `wither` using `compact`.
+witherDefault :: forall t m a b. Witherable t => Applicative m =>
+  (a -> m (Maybe b)) -> t a -> m (t b)
+witherDefault p = map compact <<< traverse p
 
 -- | A default implementation of `parititonMap` given a `Witherable`.
 partitionMapByWilt :: forall t a l r. Witherable t =>
@@ -71,13 +84,6 @@ traverseByWither :: forall t m a b. Witherable t => Applicative m =>
   (a -> m b) -> t a -> m (t b)
 traverseByWither f = wither (map Just <<< f)
 
--- | A default implementation of `wither` using `wilt`.
-witherDefault :: forall t m a b. Witherable t => Applicative m =>
-  (a -> m (Maybe b)) -> t a -> m (t b)
-witherDefault p xs = map _.right (wilt (map convert <<< p) xs) where
-  convert Nothing = Left unit
-  convert (Just y) = Right y
-
 -- | Partition between `Left` and `Right` values - with effects in `m`.
 wilted :: forall t m l r. Witherable t => Applicative m =>
   t (m (Either l r)) -> m { left :: t l, right :: t r }
@@ -89,16 +95,16 @@ withered :: forall t m x. Witherable t => Applicative m =>
 withered = wither id
 
 instance witherableArray :: Witherable Array where
-  wilt p xs = map partitioned (traverse p xs)
-  wither p xs = map filtered (traverse p xs)
+  wilt = wiltDefault
+  wither = witherDefault
 
 instance witherableList :: Witherable List where
-  wilt p xs = map partitioned (traverse p xs)
-  wither p xs = map filtered (traverse p xs)
+  wilt = wiltDefault
+  wither = witherDefault
 
 instance witherableMap :: Ord k => Witherable (Map k) where
-  wilt p xs = map partitioned (traverse p xs)
-  wither p xs = map filtered (traverse p xs)
+  wilt = wiltDefault
+  wither = witherDefault
 
 instance witherableMaybe :: Witherable Maybe where
   wilt p Nothing = pure { left: Nothing, right: Nothing }
