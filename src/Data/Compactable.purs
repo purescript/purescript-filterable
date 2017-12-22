@@ -21,6 +21,40 @@ import Data.Monoid (class Monoid, mempty)
 import Data.Tuple (Tuple(..))
 import Prelude (class Ord, const, unit, (<<<))
 
+-- | `Compactable` represents data structures which can be _compacted_/_filtered_.
+-- | This is a generalization of catMaybes as a new function `compact`. `compact`
+-- | has relations with `Functor`, `Applicative`, `Monad`, `Plus`, and `Traversable`
+-- | in that we can use these classes to provide the ability to operate on a data type
+-- | by eliminating intermediate Nothings. This is useful for representing the
+-- | filtering out of values, or failure.
+-- |
+-- | To be compactable alone, no laws must be satisfied other than the type signature.
+-- |
+-- | If the data type is also a Functor the following should hold:
+-- |
+-- | - Functor Identity: `compact <<< map Just ≡ id`
+-- |
+-- | According to Kmett, (Compactable f, Functor f) is a functor from the
+-- | kleisli category of Maybe to the category of Hask.
+-- | `Kleisli Maybe -> Hask`.
+-- |
+-- | If the data type is also `Applicative` the following should hold:
+-- |
+-- | - `compact <<< (pure Just <*> _) ≡ id`
+-- | - `applyMaybe (pure Just) ≡ id`
+-- | - `compact ≡ applyMaybe (pure id)`
+-- |
+-- | If the data type is also a `Monad` the following should hold:
+-- |
+-- | - `flip bindMaybe (pure <<< Just) ≡ id`
+-- | - `compact <<< (pure <<< (Just (=<<))) ≡ id`
+-- | - `compact ≡ flip bindMaybe pure`
+-- |
+-- | If the data type is also `Plus` the following should hold:
+-- |
+-- | - `compact empty ≡ empty`
+-- | - `compact (const Nothing <$> xs) ≡ empty`
+
 class Compactable f where
   compact :: forall a.
     f (Maybe a) -> f a
