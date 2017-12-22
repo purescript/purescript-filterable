@@ -34,6 +34,7 @@ import Prelude (class Ord)
 -- |
 -- | Laws:
 -- |
+-- | - Naturality: `t <<< wither f ≡ wither (t <<< f)`
 -- | - Identity: `wither (pure <<< Just) ≡ pure`
 -- | - Composition: `Compose <<< map (wither f) <<< wither g ≡ wither (Compose <<< map (wither f) <<< g)`
 -- | - Multipass partition: `wilt p ≡ map separate <<< traverse p`
