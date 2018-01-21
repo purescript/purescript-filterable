@@ -62,14 +62,12 @@ class Compactable f where
   separate :: forall l r.
     f (Either l r) -> { left :: f l, right :: f r }
 
-compactDefault :: forall f a. Functor f => Compactable f => f (Maybe a) -> f a
+compactDefault :: forall f a. Functor f => Compactable f =>
+  f (Maybe a) -> f a
 compactDefault = _.right <<< separate <<< map (note unit)
 
-separateDefault
-  :: forall f l r
-   . Functor f
-  => Compactable f
-  => f (Either l r) -> { left :: f l, right :: f r}
+separateDefault :: forall f l r. Functor f => Compactable f =>
+  f (Either l r) -> { left :: f l, right :: f r}
 separateDefault xs = { left: compact $ (hush <<< swapEither) <$> xs
                      , right: compact $ hush <$> xs
                      }
@@ -105,12 +103,8 @@ instance compactableList :: Compactable List.List where
   compact = List.catMaybes
   separate xs = separateSequence xs
 
-separateSequence
-  :: forall f l r
-   . Alternative f
-  => Foldable f
-  => Compactable f
-  => f (Either l r) -> { left :: f l, right :: f r }
+separateSequence :: forall f l r. Alternative f => Foldable f => Compactable f =>
+  f (Either l r) -> { left :: f l, right :: f r }
 separateSequence = foldl go { left: empty, right: empty } where
     go acc = case _ of
       Left l  -> acc { left = acc.left <|> pure l }
@@ -127,33 +121,22 @@ instance compactableMap :: Ord k => Compactable (Map.Map k) where
         Left l -> { left: Map.insert k l left, right }
         Right r -> { left: left, right: Map.insert k r right }
 
-mapToList :: forall k v. Ord k => Map.Map k v -> List.List (Tuple k v)
+mapToList :: forall k v. Ord k =>
+  Map.Map k v -> List.List (Tuple k v)
 mapToList = Map.toUnfoldable
 
-applyMaybe
-  :: forall f a b
-   . Apply f
-  => Compactable f
-  => f (a -> Maybe b) -> f a -> f b
+applyMaybe :: forall f a b. Apply f => Compactable f =>
+  f (a -> Maybe b) -> f a -> f b
 applyMaybe p = compact <<< apply p
 
-applyEither
-  :: forall f a l r
-   . Apply f
-  => Compactable f
-  => f (a -> Either l r) -> f a -> { left :: f l, right :: f r }
+applyEither :: forall f a l r. Apply f => Compactable f =>
+  f (a -> Either l r) -> f a -> { left :: f l, right :: f r }
 applyEither p = separate <<< apply p
 
-bindMaybe
-  :: forall m a b
-   . Bind m
-  => Compactable m
-  => m a -> (a -> m (Maybe b)) -> m b
+bindMaybe :: forall m a b. Bind m => Compactable m =>
+  m a -> (a -> m (Maybe b)) -> m b
 bindMaybe x = compact <<< bind x
 
-bindEither
-  :: forall m a l r
-   . Bind m
-  => Compactable m
-  => m a -> (a -> m (Either l r)) -> { left :: m l, right :: m r }
+bindEither :: forall m a l r. Bind m => Compactable m =>
+  m a -> (a -> m (Either l r)) -> { left :: m l, right :: m r }
 bindEither x = separate <<< bind x
