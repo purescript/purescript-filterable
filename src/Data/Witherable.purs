@@ -9,13 +9,14 @@ module Data.Witherable
   , withered
   , witherDefault
   , wiltDefault
-  , module Data.Compactable
+  , module Data.Filterable
   ) where
 
 import Control.Applicative (class Applicative, pure)
 import Control.Category ((<<<), id)
-import Data.Compactable (class Compactable, compact, separate)
+import Data.Compactable (compact, separate)
 import Data.Either (Either(..))
+import Data.Filterable (class Filterable)
 import Data.Functor (map)
 import Data.Identity (Identity(..))
 import Data.List (List)
@@ -53,7 +54,7 @@ import Prelude (class Ord)
 -- | - `partitionMapByWilt`
 -- | - `filterMapByWither`
 -- | - `traverseByWither`
-class (Compactable t, Traversable t) <= Witherable t where
+class (Filterable t, Traversable t) <= Witherable t where
   wilt :: forall m a l r. Applicative m =>
     (a -> m (Either l r)) -> t a -> m { left :: t l, right :: t r }
 
