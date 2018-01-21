@@ -2,9 +2,9 @@
 
 [![Build status](https://travis-ci.org/LiamGoodacre/purescript-filterable.svg?branch=master)](https://travis-ci.org/LiamGoodacre/purescript-filterable)
 
-Classes for *filterable* and *witherable* data structures.
+Classes for *compactable*, *filterable*, and *witherable* data structures.
 
-Inspired by [witherable](https://hackage.haskell.org/package/witherable) on hackage.
+Inspired by [compactable](https://hackage.haskell.org/package/compactable) and [witherable](https://hackage.haskell.org/package/witherable) on hackage.
 
 ## Installation
 
