@@ -2,8 +2,8 @@ module Test.Main where
 
 import Prelude
 
-import Control.Monad.Eff (Eff)
-import Control.Monad.Eff.Console (CONSOLE, log)
+import Effect (Effect)
+import Effect.Console (log)
 import Data.Compactable (compact, separate)
 import Data.Either (Either(..))
 import Data.Filterable (filter, filterMap, partition, partitionMap)
@@ -13,7 +13,7 @@ import Data.Map (fromFoldable) as Map
 import Data.Maybe (Maybe(..))
 import Data.Tuple.Nested ((/\))
 import Data.Witherable (wilt, wither)
-import Test.Assert (ASSERT, assert)
+import Test.Assert (assert)
 
 testEqNoYes :: ∀ a. (Ord a) => { no :: a, yes :: a } -> { no :: a, yes :: a } -> Boolean
 testEqNoYes { no: n1, yes: y1 } { no: n2, yes: y2 } =
@@ -23,7 +23,7 @@ testEqLeftRight :: ∀ a. (Ord a) => { left :: a, right :: a } -> { left :: a, r
 testEqLeftRight { left: l1, right: r1 } { left: l2, right: r2 } =
     l1 == l2 && r1 == r2
 
-testCompactable :: Eff (console :: CONSOLE, assert :: ASSERT) Unit
+testCompactable :: Effect Unit
 testCompactable = do
   log "Test compactableMaybe instance" *> do
     let parts1 = separate $ Just ((Left 1) :: Either Int Int)
@@ -84,7 +84,7 @@ testCompactable = do
     assert $ parts.left == comparisonMapOdds
     assert $ parts.right == comparisonMapEvens
 
-testFilterable :: Eff (console :: CONSOLE, assert :: ASSERT) Unit
+testFilterable :: Effect Unit
 testFilterable = do
   log "Test filterableMaybe instance" *> do
     assert $ filterMap pred (Just 6) == Just 60
@@ -120,7 +120,7 @@ testFilterable = do
   where
     pred x = if x > 5 then Just (x * 10) else Nothing
 
-testWitherable :: Eff (console :: CONSOLE, assert :: ASSERT) Unit
+testWitherable :: Effect Unit
 testWitherable = do
    log "Test witherableMaybe instance" *> do
      assert $ map _.right (wilt predE (Just 6)) == Identity (Just 60)
@@ -173,7 +173,7 @@ testWitherable = do
      predM x = if x > 5 then Identity (Just (x * 10)) else Identity Nothing
      predE x = if x > 5 then Identity (Right (x * 10)) else Identity (Left x)
 
-main :: Eff (console :: CONSOLE, assert :: ASSERT) Unit
+main :: Effect Unit
 main = do
   testCompactable
   testFilterable
