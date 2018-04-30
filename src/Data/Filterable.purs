@@ -42,16 +42,16 @@ import Prelude (const, class Ord)
 -- | - `filter` - filter a data structure based on a boolean.
 -- |
 -- | Laws:
--- | - Functor Relation: `filterMap id ≡ compact`
--- | - Functor Identity: `filterMap Just ≡ id`
+-- | - Functor Relation: `filterMap identity ≡ compact`
+-- | - Functor Identity: `filterMap Just ≡ identity`
 -- | - Kleisli Composition: `filterMap (l <=< r) ≡ filterMap l <<< filterMap r`
 -- |
 -- | - `filter ≡ filterMap <<< maybeBool`
 -- | - `filterMap p ≡ filter (isJust <<< p)`
 -- |
--- | - Functor Relation: `partitionMap id ≡ separate`
--- | - Functor Identity 1: `_.right <<< partitionMap Right ≡ id`
--- | - Functor Identity 2: `_.left <<< partitionMap Left ≡ id`
+-- | - Functor Relation: `partitionMap identity ≡ separate`
+-- | - Functor Identity 1: `_.right <<< partitionMap Right ≡ identity`
+-- | - Functor Identity 2: `_.left <<< partitionMap Left ≡ identity`
 -- |
 -- | - `f <<< partition ≡ partitionMap <<< eitherBool` where `f = \{ no, yes } -> { left: no, right: yes }`
 -- | - `f <<< partitionMap p ≡ partition (isRight <<< p)` where `f = \{ left, right } -> { no: left, yes: right}`

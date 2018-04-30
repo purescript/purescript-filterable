@@ -13,7 +13,7 @@ module Data.Witherable
   ) where
 
 import Control.Applicative (class Applicative, pure)
-import Control.Category ((<<<), id)
+import Control.Category ((<<<), identity)
 import Data.Compactable (compact, separate)
 import Data.Either (Either(..))
 import Data.Filterable (class Filterable)
@@ -89,12 +89,12 @@ traverseByWither f = wither (map Just <<< f)
 -- | Partition between `Left` and `Right` values - with effects in `m`.
 wilted :: forall t m l r. Witherable t => Applicative m =>
   t (m (Either l r)) -> m { left :: t l, right :: t r }
-wilted = wilt id
+wilted = wilt identity
 
 -- | Filter out all the `Nothing` values - with effects in `m`.
 withered :: forall t m x. Witherable t => Applicative m =>
   t (m (Maybe x)) -> m (t x)
-withered = wither id
+withered = wither identity
 
 instance witherableArray :: Witherable Array where
   wilt = wiltDefault
