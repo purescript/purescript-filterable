@@ -18,15 +18,15 @@
     "package.json"
   ],
   "dependencies": {
-    "purescript-foldable-traversable": "purescript/purescript-foldable-traversable#compiler/0.12",
-    "purescript-identity": "purescript/purescript-identity#compiler/0.12",
-    "purescript-arrays": "purescript/purescript-arrays#compiler/0.12",
-    "purescript-either": "purescript/purescript-either#compiler/0.12",
-    "purescript-lists": "purescript/purescript-lists#compiler/0.12",
-    "purescript-ordered-collections": "purescript-ordered-collections#compiler/0.12"
+    "purescript-foldable-traversable": "^4.0.0",
+    "purescript-identity": "^4.0.0",
+    "purescript-arrays": "^5.0.0",
+    "purescript-either": "^4.0.0",
+    "purescript-lists": "^5.0.0",
+    "purescript-ordered-collections": "^1.0.0"
   },
   "devDependencies": {
-    "purescript-assert": "purescript/purescript-assert#compiler/0.12",
-    "purescript-console": "purescript-console#compiler/0.12"
+    "purescript-assert": "^4.0.0",
+    "purescript-console": "^4.0.0"
   }
 }
