@@ -4,6 +4,10 @@ module Data.Compactable
   , separate
   , compactDefault
   , separateDefault
+  , applyMaybe
+  , applyEither
+  , bindMaybe
+  , bindEither
   ) where
 
 import Control.Alternative (class Alternative, empty, (<|>))
