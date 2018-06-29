@@ -12,16 +12,17 @@ module Data.Witherable
   , module Data.Filterable
   ) where
 
-import Control.Applicative (class Applicative, pure)
+import Control.Applicative (class Applicative, (<*>), pure)
 import Control.Category ((<<<), identity)
 import Data.Compactable (compact, separate)
-import Data.Either (Either(..))
+import Data.Either (Either(..), either)
 import Data.Filterable (class Filterable)
-import Data.Functor (map)
+import Data.Functor ((<$>), map)
 import Data.Identity (Identity(..))
-import Data.List (List)
+import Data.List (List(..), (:))
+import Data.List as List
 import Data.Map (Map)
-import Data.Maybe (Maybe(..))
+import Data.Maybe (Maybe(..), maybe)
 import Data.Monoid (class Monoid, mempty)
 import Data.Newtype (unwrap)
 import Data.Traversable (class Traversable, traverse)
@@ -101,8 +102,16 @@ instance witherableArray :: Witherable Array where
   wither = witherDefault
 
 instance witherableList :: Witherable List where
-  wilt = wiltDefault
-  wither = witherDefault
+  wilt p = map rev <<< List.foldl go (pure { left: Nil, right: Nil }) where
+    rev { left, right } = { left: List.reverse left, right: List.reverse right }
+    go acc x = (\{left, right} ->
+                 either (\l -> { left: l:left, right })
+                        (\r -> { left, right: r:right })
+               ) <$> acc <*> p x
+
+  wither p = map List.reverse <<< List.foldl go (pure Nil) where
+    go acc x = (\comp ->
+                 maybe comp (_ : comp)) <$> acc <*> p x
 
 instance witherableMap :: Ord k => Witherable (Map k) where
   wilt = wiltDefault
