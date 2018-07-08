@@ -19,19 +19,19 @@ import Data.Array ((!!))
 import Data.Array.ST as STA
 import Data.Array.ST.Iterator as STAI
 import Data.Compactable (compact, separate)
-import Data.Either (Either(..), either)
+import Data.Either (Either(..))
 import Data.Filterable (class Filterable)
-import Data.Functor ((<$>), map, voidRight)
+import Data.Functor (map, (<$>))
 import Data.Identity (Identity(..))
 import Data.List (List(..), (:))
 import Data.List as List
 import Data.Map as Map
-import Data.Maybe (Maybe(..), maybe)
+import Data.Maybe (Maybe(..))
 import Data.Monoid (class Monoid, mempty)
 import Data.Newtype (unwrap)
 import Data.Traversable (class Traversable, traverse)
 import Data.Tuple (Tuple(..))
-import Prelude (class Ord, bind, const, discard, flip, unit, ($))
+import Prelude (class Ord, bind, discard, unit, void, ($))
 
 -- | `Witherable` represents data structures which can be _partitioned_ with
 -- | effects in some `Applicative` functor.
@@ -105,21 +105,23 @@ withered = wither identity
 instance witherableArray :: Witherable Array where
   wilt p xs = ado
     xs' <- traverse p xs
-    let left = ST.run (do
+    let left = ST.run do
          ls <- STA.empty
          iter <- STAI.iterator (xs' !! _)
-         STAI.iterate iter
-           (voidRight unit <<< either (flip STA.push $ ls) (const $ pure 0))
+         STAI.iterate iter case _ of
+           Left l -> void $ STA.push l ls
+           _      -> pure unit
 
-         STA.unsafeFreeze ls)
+         STA.unsafeFreeze ls
 
-    let right = ST.run (do
+    let right = ST.run do
          rs <- STA.empty
          iter  <- STAI.iterator (xs' !! _)
-         STAI.iterate iter
-           (voidRight unit <<< either (const $ pure 0) (flip STA.push $ rs))
+         STAI.iterate iter case _ of
+           Right r -> void $ STA.push r rs
+           _       -> pure unit
 
-         STA.unsafeFreeze rs)
+         STA.unsafeFreeze rs
 
     in { left, right }
 
@@ -127,10 +129,11 @@ instance witherableArray :: Witherable Array where
     xs' <- traverse p xs
     in ST.run do
       result <- STA.empty
-      iter <- STAI.iterator (xs' !! _)
+      iter   <- STAI.iterator (xs' !! _)
 
-      STAI.iterate iter
-           (voidRight unit <<< maybe (pure 0) (flip STA.push $ result))
+      STAI.iterate iter case _ of
+        Nothing -> pure unit
+        Just j  -> void $ STA.push j result
 
       STA.unsafeFreeze result
 
@@ -138,13 +141,17 @@ instance witherableList :: Witherable List where
   wilt p = map rev <<< List.foldl go (pure { left: Nil, right: Nil }) where
     rev { left, right } = { left: List.reverse left, right: List.reverse right }
     go acc x = (\{left, right} ->
-                 either (\l -> { left: l:left, right })
-                        (\r -> { left, right: r:right })
-               ) <$> acc <*> p x
+      case _ of
+        Left l  -> { left: l : left, right }
+        Right r -> { left, right: r : right }
+      ) <$> acc <*> p x
 
   wither p = map List.reverse <<< List.foldl go (pure Nil) where
     go acc x = (\comp ->
-                 maybe comp (_ : comp)) <$> acc <*> p x
+      case _ of
+        Nothing -> comp
+        Just j  -> j : comp
+      ) <$> acc <*> p x
 
 instance witherableMap :: Ord k => Witherable (Map.Map k) where
   wilt p = List.foldl go (pure { left: Map.empty, right: Map.empty }) <<< toList
@@ -152,9 +159,9 @@ instance witherableMap :: Ord k => Witherable (Map.Map k) where
       toList :: forall v. Ord k => Map.Map k v -> List.List (Tuple k v)
       toList = Map.toUnfoldable
 
-      go acc (Tuple k x) = (\{left, right} e ->
-        case e of
-          Left l -> { left: Map.insert k l left, right }
+      go acc (Tuple k x) = (\{left, right} ->
+        case _ of
+          Left l  -> { left: Map.insert k l left, right }
           Right r -> { left, right: Map.insert k r right }
         ) <$> acc <*> p x
 
@@ -163,10 +170,11 @@ instance witherableMap :: Ord k => Witherable (Map.Map k) where
       toList :: forall v. Ord k => Map.Map k v -> List.List (Tuple k v)
       toList = Map.toUnfoldable
 
-      go acc (Tuple k x) = (\comp m ->
-        case m of
+      go acc (Tuple k x) = (\comp ->
+        case _ of
           Nothing -> comp
-          Just j -> Map.insert k j comp) <$> acc <*> p x
+          Just j  -> Map.insert k j comp
+        ) <$> acc <*> p x
 
 instance witherableMaybe :: Witherable Maybe where
   wilt p Nothing = pure { left: Nothing, right: Nothing }
