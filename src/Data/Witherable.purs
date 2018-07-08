@@ -25,11 +25,12 @@ import Data.Functor ((<$>), map, voidRight)
 import Data.Identity (Identity(..))
 import Data.List (List(..), (:))
 import Data.List as List
-import Data.Map (Map)
+import Data.Map as Map
 import Data.Maybe (Maybe(..), maybe)
 import Data.Monoid (class Monoid, mempty)
 import Data.Newtype (unwrap)
 import Data.Traversable (class Traversable, traverse)
+import Data.Tuple (Tuple(..))
 import Prelude (class Ord, bind, const, discard, flip, unit, ($))
 
 -- | `Witherable` represents data structures which can be _partitioned_ with
@@ -145,9 +146,27 @@ instance witherableList :: Witherable List where
     go acc x = (\comp ->
                  maybe comp (_ : comp)) <$> acc <*> p x
 
-instance witherableMap :: Ord k => Witherable (Map k) where
-  wilt = wiltDefault
-  wither = witherDefault
+instance witherableMap :: Ord k => Witherable (Map.Map k) where
+  wilt p = List.foldl go (pure { left: Map.empty, right: Map.empty }) <<< toList
+    where
+      toList :: forall v. Ord k => Map.Map k v -> List.List (Tuple k v)
+      toList = Map.toUnfoldable
+
+      go acc (Tuple k x) = (\{left, right} e ->
+        case e of
+          Left l -> { left: Map.insert k l left, right }
+          Right r -> { left, right: Map.insert k r right }
+        ) <$> acc <*> p x
+
+  wither p = List.foldl go (pure Map.empty) <<< toList
+    where
+      toList :: forall v. Ord k => Map.Map k v -> List.List (Tuple k v)
+      toList = Map.toUnfoldable
+
+      go acc (Tuple k x) = (\comp m ->
+        case m of
+          Nothing -> comp
+          Just j -> Map.insert k j comp) <$> acc <*> p x
 
 instance witherableMaybe :: Witherable Maybe where
   wilt p Nothing = pure { left: Nothing, right: Nothing }
