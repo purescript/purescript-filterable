@@ -14,10 +14,6 @@ module Data.Witherable
 
 import Control.Applicative (class Applicative, (<*>), pure)
 import Control.Category ((<<<), identity)
-import Control.Monad.ST as ST
-import Data.Array ((!!))
-import Data.Array.ST as STA
-import Data.Array.ST.Iterator as STAI
 import Data.Compactable (compact, separate)
 import Data.Either (Either(..))
 import Data.Filterable (class Filterable)
@@ -31,7 +27,7 @@ import Data.Monoid (class Monoid, mempty)
 import Data.Newtype (unwrap)
 import Data.Traversable (class Traversable, traverse)
 import Data.Tuple (Tuple(..))
-import Prelude (class Ord, bind, discard, unit, void, ($))
+import Prelude (class Ord)
 
 -- | `Witherable` represents data structures which can be _partitioned_ with
 -- | effects in some `Applicative` functor.
@@ -103,39 +99,8 @@ withered :: forall t m x. Witherable t => Applicative m =>
 withered = wither identity
 
 instance witherableArray :: Witherable Array where
-  wilt p xs = ado
-    xs' <- traverse p xs
-    let left = ST.run do
-         ls <- STA.empty
-         iter <- STAI.iterator (xs' !! _)
-         STAI.iterate iter case _ of
-           Left l -> void $ STA.push l ls
-           _      -> pure unit
-
-         STA.unsafeFreeze ls
-
-    let right = ST.run do
-         rs <- STA.empty
-         iter  <- STAI.iterator (xs' !! _)
-         STAI.iterate iter case _ of
-           Right r -> void $ STA.push r rs
-           _       -> pure unit
-
-         STA.unsafeFreeze rs
-
-    in { left, right }
-
-  wither p xs = ado
-    xs' <- traverse p xs
-    in ST.run do
-      result <- STA.empty
-      iter   <- STAI.iterator (xs' !! _)
-
-      STAI.iterate iter case _ of
-        Nothing -> pure unit
-        Just j  -> void $ STA.push j result
-
-      STA.unsafeFreeze result
+  wilt = wiltDefault
+  wither = witherDefault
 
 instance witherableList :: Witherable List where
   wilt p = map rev <<< List.foldl go (pure { left: Nil, right: Nil }) where
