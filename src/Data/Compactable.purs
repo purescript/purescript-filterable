@@ -4,6 +4,8 @@ module Data.Compactable
   , separate
   , compactDefault
   , separateDefault
+  , mapMaybe
+  , mapEither
   , applyMaybe
   , applyEither
   , bindMaybe
@@ -129,9 +131,17 @@ mapToList :: forall k v. Ord k =>
   Map.Map k v -> List.List (Tuple k v)
 mapToList = Map.toUnfoldable
 
+mapMaybe :: forall f a b. Functor f => Compactable f =>
+  (a -> Maybe b) -> f a -> f b
+mapMaybe p = compact <<< map p  
+
 applyMaybe :: forall f a b. Apply f => Compactable f =>
   f (a -> Maybe b) -> f a -> f b
 applyMaybe p = compact <<< apply p
+
+mapEither :: forall f a l r. Functor f => Compactable f =>
+  (a -> Either l r) -> f a -> { left :: f l, right :: f r }
+mapEither p = separate <<< map p  
 
 applyEither :: forall f a l r. Apply f => Compactable f =>
   f (a -> Either l r) -> f a -> { left :: f l, right :: f r }
