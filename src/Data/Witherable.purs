@@ -71,7 +71,7 @@ witherDefault :: forall t m a b. Witherable t => Applicative m =>
   (a -> m (Maybe b)) -> t a -> m (t b)
 witherDefault p = map compact <<< traverse p
 
--- | A default implementation of `parititonMap` given a `Witherable`.
+-- | A default implementation of `partitionMap` given a `Witherable`.
 partitionMapByWilt :: forall t a l r. Witherable t =>
   (a -> Either l r) -> t a -> { left :: t l, right :: t r }
 partitionMapByWilt p = unwrap <<< wilt (Identity <<< p)
