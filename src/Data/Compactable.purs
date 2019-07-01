@@ -10,12 +10,16 @@ module Data.Compactable
   , bindEither
   ) where
 
-import Control.Alternative (class Alternative, empty, (<|>))
+import Control.Alternative (empty, (<|>))
 import Control.Applicative (class Apply, apply, pure)
+import Control.Apply ((<*>))
 import Control.Bind (class Bind, bind, join)
-import Data.Array as Array
+import Control.Monad.ST as ST
+import Data.Array ((!!))
+import Data.Array.ST as STA
+import Data.Array.ST.Iterator as STAI
 import Data.Either (Either(Right, Left), hush, note)
-import Data.Foldable (class Foldable, foldl, foldr)
+import Data.Foldable (foldl, foldr)
 import Data.Function (($))
 import Data.Functor (class Functor, map, (<$>))
 import Data.List as List
@@ -23,7 +27,7 @@ import Data.Map as Map
 import Data.Maybe (Maybe(..))
 import Data.Monoid (class Monoid, mempty)
 import Data.Tuple (Tuple(..))
-import Prelude (class Ord, const, unit, (<<<))
+import Prelude (class Ord, const, discard, unit, void, (<<<))
 
 -- | `Compactable` represents data structures which can be _compacted_/_filtered_.
 -- | This is a generalization of catMaybes as a new function `compact`. `compact`
@@ -100,16 +104,30 @@ instance compactableEither :: Monoid m => Compactable (Either m) where
     Right r -> { left: Left mempty, right: Right r }
 
 instance compactableArray :: Compactable Array where
-  compact = Array.catMaybes
-  separate xs = separateSequence xs
+  compact xs = ST.run do
+    result <- STA.empty
+    iter   <- STAI.iterator (xs !! _)
+
+    STAI.iterate iter $ void <<< case _ of
+      Nothing -> pure 0
+      Just j  -> STA.push j result
+
+    STA.unsafeFreeze result
+
+  separate xs = ST.run do
+    ls <- STA.empty
+    rs <- STA.empty
+    iter <- STAI.iterator (xs !! _)
+
+    STAI.iterate iter $ void <<< case _ of
+      Left l  -> STA.push l ls
+      Right r -> STA.push r rs
+
+    {left: _, right: _} <$> STA.unsafeFreeze ls <*> STA.unsafeFreeze rs
 
 instance compactableList :: Compactable List.List where
   compact = List.catMaybes
-  separate xs = separateSequence xs
-
-separateSequence :: forall f l r. Alternative f => Foldable f => Compactable f =>
-  f (Either l r) -> { left :: f l, right :: f r }
-separateSequence = foldl go { left: empty, right: empty } where
+  separate = foldl go { left: empty, right: empty } where
     go acc = case _ of
       Left l  -> acc { left = acc.left <|> pure l }
       Right r -> acc { right = acc.right <|> pure r }

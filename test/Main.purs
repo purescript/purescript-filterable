@@ -2,8 +2,6 @@ module Test.Main where
 
 import Prelude
 
-import Effect (Effect)
-import Effect.Console (log)
 import Data.Compactable (compact, separate)
 import Data.Either (Either(..))
 import Data.Filterable (filter, filterMap, partition, partitionMap)
@@ -13,161 +11,274 @@ import Data.Map (fromFoldable) as Map
 import Data.Maybe (Maybe(..))
 import Data.Tuple.Nested ((/\))
 import Data.Witherable (wilt, wither)
-import Test.Assert (assert)
-
-testEqNoYes :: ∀ a. (Ord a) => { no :: a, yes :: a } -> { no :: a, yes :: a } -> Boolean
-testEqNoYes { no: n1, yes: y1 } { no: n2, yes: y2 } =
-    n1 == n2 && y1 == y2
-
-testEqLeftRight :: ∀ a. (Ord a) => { left :: a, right :: a } -> { left :: a, right :: a } -> Boolean
-testEqLeftRight { left: l1, right: r1 } { left: l2, right: r2 } =
-    l1 == l2 && r1 == r2
+import Effect (Effect)
+import Effect.Console (log)
+import Test.Assert (assertEqual)
 
 testCompactable :: Effect Unit
 testCompactable = do
   log "Test compactableMaybe instance" *> do
     let parts1 = separate $ Just ((Left 1) :: Either Int Int)
-    assert $ parts1.left == Just 1
-    assert $ parts1.right == Nothing
+    assertEqual { actual: parts1.left
+                , expected: Just 1
+                }
+    assertEqual { actual: parts1.right
+                , expected: Nothing
+                }
 
     let parts2 = separate $ Just ((Right 2) :: Either Int Int)
-    assert $ parts2.left == Nothing
-    assert $ parts2.right == Just 2
+    assertEqual { actual: parts2.left
+                , expected: Nothing
+                }
+    assertEqual { actual: parts2.right
+                , expected: Just 2
+                }
 
     let parts3 = separate $ Nothing :: Maybe (Either Int Int)
-    assert $ parts3.left == Nothing
-    assert $ parts3.right == Nothing
+    assertEqual { actual: parts3.left
+                , expected: Nothing
+                }
+    assertEqual { actual: parts3.right
+                , expected: Nothing
+                }
 
   log "Text compactableEither instance" *> do
-    let e1 = (Left [1] :: Either (Array Int) (Maybe Int))
-    assert $ compact e1 == Left [1]
+    assertEqual { actual: compact (Left [1] :: Either (Array Int) (Maybe Int))
+                , expected: Left [1]
+                }
 
-    let e2 = (Right Nothing :: Either (Array Int) (Maybe Int))
-    assert $ compact e2 == Left []
+    assertEqual { actual: compact (Right Nothing :: Either (Array Int) (Maybe Int))
+                , expected: Left []
+                }
 
-    let e3 = (Right (Just 3) :: Either (Array Int) (Maybe Int))
-    assert $ compact e3 == Right 3
+    assertEqual { actual: compact (Right (Just 3) :: Either (Array Int) (Maybe Int))
+                , expected: Right 3
+                }
 
     let parts1 = separate (Left [1] :: Either (Array Int) (Either Int Int))
-    assert $ parts1.left == Left [1]
-    assert $ parts1.right == Left [1]
+    assertEqual { actual: parts1.left
+                , expected: Left [1]
+                }
+    assertEqual { actual: parts1.right
+                , expected: Left [1]
+                }
 
     let parts2 = separate (Right (Left 2) :: Either (Array Int) (Either Int Int))
-    assert $ parts2.left == Right 2
-    assert $ parts2.right == Left []
+    assertEqual { actual: parts2.left
+                , expected: Right 2
+                }
+    assertEqual { actual: parts2.right
+                , expected: Left []
+                }
 
     let parts3 = separate (Right (Right 3) :: Either (Array Int) (Either Int Int))
-    assert $ parts3.left == Left []
-    assert $ parts3.right == Right 3
+    assertEqual { actual: parts3.left
+                , expected: Left []
+                }
+    assertEqual { actual: parts3.right
+                , expected: Right 3
+                }
 
   log "Test compactableArray instance" *> do
     let testList = [Left 1, Right 2, Left 3, Right 4, Left 5, Right 6, Left 7, Right 8]
     let parts = separate testList
-    assert $ parts.left == [1, 3, 5, 7]
-    assert $ parts.right == [2, 4, 6, 8]
+    assertEqual { actual: parts.left
+                , expected: [1, 3, 5, 7]
+                }
+    assertEqual { actual: parts.right
+                , expected: [2, 4, 6, 8]
+                }
 
   log "Test compactableList instance" *> do
     let testList = (Left 1 : Right 2 : Left 3 : Right 4 : Left 5 : Right 6 : Left 7 : Right 8 : Nil)
     let parts = separate testList
-    assert $ parts.left == (1 : 3 : 5 : 7 : Nil)
-    assert $ parts.right == (2 : 4 : 6 : 8 : Nil)
+    assertEqual { actual: parts.left
+                , expected: 1 : 3 : 5 : 7 : Nil
+                }
+    assertEqual { actual: parts.right
+                , expected: 2 : 4 : 6 : 8 : Nil
+                }
 
   log "Test compactableMap instance" *> do
     let m = Map.fromFoldable
-    let testCompactMap = m [1 /\ Just 1, 2 /\ Nothing, 3 /\ Just 3, 4 /\ Nothing]
-    let comparisonMapOdds = m [1 /\ 1, 3 /\ 3]
-    assert $ compact testCompactMap == comparisonMapOdds
+    assertEqual { actual: compact $ m [1 /\ Just 1, 2 /\ Nothing, 3 /\ Just 3, 4 /\ Nothing]
+                , expected: m [1 /\ 1, 3 /\ 3]
+                }
 
-    let testSeparateMap = m [1 /\ Left 1, 2 /\ Right 2, 3 /\ Left 3, 4 /\ Right 4]
-    let comparisonMapEvens = m [2 /\ 2, 4 /\ 4]
-    let parts = separate testSeparateMap
-    assert $ parts.left == comparisonMapOdds
-    assert $ parts.right == comparisonMapEvens
+    let parts = separate $ m [1 /\ Left 1, 2 /\ Right 2, 3 /\ Left 3, 4 /\ Right 4]
+    assertEqual { actual: parts.left
+                 , expected: m [1 /\ 1, 3 /\ 3]
+                 }
+    assertEqual { actual: parts.right
+                , expected: m [2 /\ 2, 4 /\ 4]
+                }
 
 testFilterable :: Effect Unit
 testFilterable = do
   log "Test filterableMaybe instance" *> do
-    assert $ filterMap pred (Just 6) == Just 60
-    assert $ filterMap pred (Just 5) == Nothing
-    assert $ filterMap pred Nothing == Nothing
+    assertEqual { actual: filterMap pred (Just 6)
+                , expected: Just 60
+                }
+    assertEqual { actual: filterMap pred (Just 5)
+                , expected: Nothing
+                }
+    assertEqual { actual: filterMap pred Nothing
+                , expected: Nothing
+                }
 
-    assert $ filter (_ > 5) (Just 6) == Just 6
-    assert $ filter (_ > 5) (Just 5) == Nothing
-    assert $ filter (_ > 5) Nothing == Nothing
+    assertEqual { actual: filter (_ > 5) (Just 6)
+                , expected: Just 6
+                }
+    assertEqual { actual: filter (_ > 5) (Just 5)
+                , expected: Nothing
+                }
+    assertEqual { actual: filter (_ > 5) Nothing
+                , expected: Nothing
+                }
 
   log "Test filterableList instance" *> do
     let testlist = (1 : 2 : 3 : 4 : 5 : 6 : 7 : 8 : 9 : Nil)
-    assert $ filterMap pred testlist == (60 : 70 : 80 : 90 : Nil)
-    assert $ filter (_ > 5) testlist == (6 : 7 : 8 : 9 : Nil)
-    assert $ partition (_ > 5) testlist `testEqNoYes` { no: (1 : 2 : 3 : 4 : 5 : Nil), yes: (6 : 7 : 8 : 9 : Nil)}
-    assert $ (partitionMap Right $ (1 : 2 : 3 : 4 : 5 : Nil)).right == (1 : 2 : 3 : 4 : 5 : Nil)
-    assert $ (partitionMap Left $ (1 : 2 : 3 : 4 : 5 : Nil)).left == (1 : 2 : 3 : 4 : 5 : Nil)
+    assertEqual { actual: filterMap pred testlist
+                , expected: 60 : 70 : 80 : 90 : Nil
+                }
+    assertEqual { actual: filter (_ > 5) testlist
+                , expected: 6 : 7 : 8 : 9 : Nil
+                }
+    assertEqual { actual: partition (_ > 5) testlist
+                , expected: { no: (1 : 2 : 3 : 4 : 5 : Nil), yes: (6 : 7 : 8 : 9 : Nil) }
+                }
+    assertEqual { actual: (partitionMap Right $ (1 : 2 : 3 : 4 : 5 : Nil)).right
+                , expected: 1 : 2 : 3 : 4 : 5 : Nil
+                }
+    assertEqual { actual: (partitionMap Left $ (1 : 2 : 3 : 4 : 5 : Nil)).left
+                , expected: 1 : 2 : 3 : 4 : 5 : Nil
+                }
 
   log "Test filterableArray instance" *> do
-    assert $ filterMap pred [1,2,3,4,5,6,7,8,9] == [60,70,80,90]
-    assert $ filter (_ > 5) [1,2,3,4,5,6,7,8,9] == [6,7,8,9]
-    assert $ partition (_ > 5) [1,2,3,4,5,6,7,8,9] `testEqNoYes` { no: [1,2,3,4,5], yes: [6,7,8,9]}
+    assertEqual { actual: filterMap pred [1,2,3,4,5,6,7,8,9]
+                , expected: [60,70,80,90]
+                }
+    assertEqual { actual: filter (_ > 5) [1,2,3,4,5,6,7,8,9]
+                , expected: [6,7,8,9]
+                }
+    assertEqual { actual: partition (_ > 5) [1,2,3,4,5,6,7,8,9]
+                , expected: { no: [1,2,3,4,5], yes: [6,7,8,9] }
+                }
   log "Test filterableMap instance" *> do
     let predE x = if x > 5 then Right (x * 10) else Left x
     let m = Map.fromFoldable
     let xs = m [4 /\ 4, 5 /\ 5, 6 /\ 6, 7 /\ 7]
-    assert $ filterMap pred xs == m [6 /\ 60, 7 /\ 70]
-    assert $ filter (_ > 5) xs == m [6 /\ 6, 7 /\ 7]
-    assert $ partition (_ > 5) xs `testEqNoYes` { no: m [4 /\ 4, 5 /\ 5]
-                                                , yes: m [6 /\ 6, 7 /\ 7] }
-    assert $ partitionMap predE xs `testEqLeftRight` { left: m [4 /\ 4, 5 /\ 5]
-                                                     , right: m [6 /\ 60, 7 /\ 70] }
+    assertEqual { actual: filterMap pred xs
+                , expected: m [6 /\ 60, 7 /\ 70]
+                }
+    assertEqual { actual: filter (_ > 5) xs
+                , expected: m [6 /\ 6, 7 /\ 7]
+                }
+    assertEqual { actual: partition (_ > 5) xs
+                , expected: { no: m [4 /\ 4, 5 /\ 5], yes: m [6 /\ 6, 7 /\ 7] }
+                }
+    assertEqual { actual: partitionMap predE xs
+                , expected: { left: m [4 /\ 4, 5 /\ 5], right: m [6 /\ 60, 7 /\ 70] }
+                }
   where
     pred x = if x > 5 then Just (x * 10) else Nothing
 
 testWitherable :: Effect Unit
 testWitherable = do
    log "Test witherableMaybe instance" *> do
-     assert $ map _.right (wilt predE (Just 6)) == Identity (Just 60)
-     assert $ map _.left (wilt predE (Just 5)) == Identity (Just 5)
-     assert $ map _.right (wilt predE Nothing) == Identity Nothing
+     assertEqual { actual: map _.right (wilt predE (Just 6))
+                 , expected: Identity (Just 60)
+                 }
+     assertEqual { actual: map _.left (wilt predE (Just 5))
+                 , expected: Identity (Just 5)
+                 }
+     assertEqual { actual: map _.right (wilt predE Nothing)
+                 , expected: Identity Nothing
+                 }
 
-     assert $ wither predM (Just 6) == Identity (Just 60)
-     assert $ wither predM (Just 5) == Identity Nothing
-     assert $ wither predM Nothing == Identity Nothing
+     assertEqual { actual: wither predM (Just 6)
+                 , expected: Identity (Just 60)
+                 }
+     assertEqual { actual: wither predM (Just 5)
+                 , expected: Identity Nothing
+                 }
+     assertEqual { actual: wither predM Nothing
+                 , expected: Identity Nothing
+                 }
 
    log "Test witherableEither instance" *> do
-     assert $ map _.right (wilt predE (Right 6 :: Either (Array Int) Int)) == Identity (Right 60)
-     assert $ map _.left (wilt predE (Right 5 :: Either (Array Int) Int)) == Identity (Right 5)
-     assert $ map _.right (wilt predE (Left [] :: Either (Array Int) Int)) == Identity (Left [])
+     assertEqual { actual:  map _.right (wilt predE (Right 6 :: Either (Array Int) Int))
+                 , expected: Identity (Right 60)
+                 }
+     assertEqual { actual: map _.left (wilt predE (Right 5 :: Either (Array Int) Int))
+                 , expected: Identity (Right 5)
+                 }
+     assertEqual { actual: map _.right (wilt predE (Left [] :: Either (Array Int) Int))
+                 , expected: Identity (Left [])
+                 }
 
-     assert $ wither predM (Just 6) == Identity (Just 60)
-     assert $ wither predM (Just 5) == Identity Nothing
-     assert $ wither predM Nothing == Identity Nothing
+     assertEqual { actual: wither predM (Just 6)
+                 , expected: Identity (Just 60)
+                 }
+     assertEqual { actual: wither predM (Just 5)
+                 , expected: Identity Nothing
+                 }
+     assertEqual { actual: wither predM Nothing
+                 , expected: Identity Nothing
+                 }
 
    log "Test witherableList instance" *> do
      let testlist = (1 : 2 : 3 : 4 : 5 : 6 : 7 : 8 : 9 : Nil)
      let resultWilt = wilt predE testlist
-     assert $ map _.right resultWilt == Identity (60 : 70 : 80 : 90 : Nil)
-     assert $ map _.left resultWilt == Identity (1 : 2 : 3 : 4 : 5 : Nil)
-     assert $ map _.right (wilt predE Nil) == Identity Nil
+     assertEqual { actual: map _.right resultWilt
+                 , expected: Identity (60 : 70 : 80 : 90 : Nil)
+                 }
+     assertEqual { actual: map _.left resultWilt
+                 , expected: Identity (1 : 2 : 3 : 4 : 5 : Nil)
+                 }
+     assertEqual { actual: map _.right (wilt predE Nil)
+                 , expected: Identity Nil
+                 }
 
-     assert $ wither predM testlist == Identity (60 : 70 : 80 : 90 : Nil)
-     assert $ wither predM Nil == Identity Nil
+     assertEqual { actual: wither predM testlist
+                 , expected: Identity (60 : 70 : 80 : 90 : Nil)
+                 }
+     assertEqual { actual: wither predM Nil
+                 , expected: Identity Nil
+                 }
 
    log "Test witherableArray instance" *> do
      let testarray = [1, 2, 3, 4, 5, 6, 7, 8, 9]
      let resultWilt = wilt predE testarray
-     assert $ map _.right resultWilt == Identity [60,  70, 80, 90]
-     assert $ map _.left resultWilt == Identity [1, 2, 3, 4, 5]
-     assert $ map _.right (wilt predE []) == Identity []
+     assertEqual { actual: map _.right resultWilt
+                 , expected: Identity [60, 70, 80, 90]
+                 }
+     assertEqual { actual: map _.left resultWilt
+                 , expected: Identity [1, 2, 3, 4, 5]
+                 }
+     assertEqual { actual: map _.right (wilt predE [])
+                 , expected: Identity []
+                 }
 
-     assert $ wither predM testarray == Identity [60, 70, 80, 90]
-     assert $ wither predM [] == Identity []
+     assertEqual { actual: wither predM testarray
+                 , expected: Identity [60, 70, 80, 90]
+                 }
+     assertEqual { actual: wither predM [], expected: Identity [] }
 
    log "Test witherableMap instance" *> do
      let m = Map.fromFoldable
      let xs = m [4 /\ 4, 5 /\ 5, 6 /\ 6, 7 /\ 7]
      let resultWilt = wilt predE xs
-     assert $ map _.right resultWilt == Identity (m [6 /\ 60, 7 /\ 70])
-     assert $ map _.left resultWilt == Identity (m [4 /\ 4, 5 /\ 5])
+     assertEqual { actual: map _.right resultWilt
+                 , expected: Identity (m [6 /\ 60, 7 /\ 70])
+                 }
+     assertEqual { actual: map _.left resultWilt
+                 , expected: Identity (m [4 /\ 4, 5 /\ 5])
+                 }
 
-     assert $ wither predM xs == Identity (m [6 /\ 60, 7 /\ 70])
+     assertEqual { actual: wither predM xs
+                 , expected: Identity (m [6 /\ 60, 7 /\ 70])
+                 }
 
    where
      predM x = if x > 5 then Identity (Just (x * 10)) else Identity Nothing

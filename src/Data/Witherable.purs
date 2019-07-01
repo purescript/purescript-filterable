@@ -12,19 +12,21 @@ module Data.Witherable
   , module Data.Filterable
   ) where
 
-import Control.Applicative (class Applicative, pure)
+import Control.Applicative (class Applicative, (<*>), pure)
 import Control.Category ((<<<), identity)
 import Data.Compactable (compact, separate)
 import Data.Either (Either(..))
 import Data.Filterable (class Filterable)
-import Data.Functor (map)
+import Data.Functor (map, (<$>))
 import Data.Identity (Identity(..))
-import Data.List (List)
-import Data.Map (Map)
+import Data.List (List(..), (:))
+import Data.List as List
+import Data.Map as Map
 import Data.Maybe (Maybe(..))
 import Data.Monoid (class Monoid, mempty)
 import Data.Newtype (unwrap)
 import Data.Traversable (class Traversable, traverse)
+import Data.Tuple (Tuple(..))
 import Prelude (class Ord)
 
 -- | `Witherable` represents data structures which can be _partitioned_ with
@@ -101,12 +103,43 @@ instance witherableArray :: Witherable Array where
   wither = witherDefault
 
 instance witherableList :: Witherable List where
-  wilt = wiltDefault
-  wither = witherDefault
+  wilt p = map rev <<< List.foldl go (pure { left: Nil, right: Nil }) where
+    rev { left, right } = { left: List.reverse left, right: List.reverse right }
+    go acc x = (\{left, right} ->
+      case _ of
+        Left l  -> { left: l : left, right }
+        Right r -> { left, right: r : right }
+      ) <$> acc <*> p x
 
-instance witherableMap :: Ord k => Witherable (Map k) where
-  wilt = wiltDefault
-  wither = witherDefault
+  wither p = map List.reverse <<< List.foldl go (pure Nil) where
+    go acc x = (\comp ->
+      case _ of
+        Nothing -> comp
+        Just j  -> j : comp
+      ) <$> acc <*> p x
+
+instance witherableMap :: Ord k => Witherable (Map.Map k) where
+  wilt p = List.foldl go (pure { left: Map.empty, right: Map.empty }) <<< toList
+    where
+      toList :: forall v. Ord k => Map.Map k v -> List.List (Tuple k v)
+      toList = Map.toUnfoldable
+
+      go acc (Tuple k x) = (\{left, right} ->
+        case _ of
+          Left l  -> { left: Map.insert k l left, right }
+          Right r -> { left, right: Map.insert k r right }
+        ) <$> acc <*> p x
+
+  wither p = List.foldl go (pure Map.empty) <<< toList
+    where
+      toList :: forall v. Ord k => Map.Map k v -> List.List (Tuple k v)
+      toList = Map.toUnfoldable
+
+      go acc (Tuple k x) = (\comp ->
+        case _ of
+          Nothing -> comp
+          Just j  -> Map.insert k j comp
+        ) <$> acc <*> p x
 
 instance witherableMaybe :: Witherable Maybe where
   wilt p Nothing = pure { left: Nothing, right: Nothing }
