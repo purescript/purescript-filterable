@@ -34,7 +34,7 @@ testCompactable = do
                 , expected: Just 2
                 }
 
-    let parts3 = separate $ Nothing :: Maybe (Either Int Int)
+    let parts3 = separate $ (Nothing :: Maybe (Either Int Int))
     assertEqual { actual: parts3.left
                 , expected: Nothing
                 }
