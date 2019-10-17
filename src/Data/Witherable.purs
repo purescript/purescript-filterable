@@ -9,6 +9,16 @@ module Data.Witherable
   , withered
   , witherDefault
   , wiltDefault
+  , class WitherableWithIndex
+  , iwilt
+  , iwither
+  , ipartitionMapByWilt
+  , ifilterMapByWither
+  , itraverseByWither
+  , iwilted
+  , iwithered
+  , iwitherDefault
+  , iwiltDefault
   , module Data.Filterable
   ) where
 

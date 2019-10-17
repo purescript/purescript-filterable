@@ -15,6 +15,22 @@ module Data.Filterable
   , filterDefaultPartitionMap
   , filterMapDefault
   , cleared
+  , class FilterableWithIndex
+  , ipartitionMap
+  , ipartition
+  , ifilterMap
+  , ifilter
+  , ieitherBool
+  , ipartitionDefault
+  , ipartitionDefaultFilter
+  , ipartitionDefaultFilterMap
+  , ipartitionMapDefault
+  , imaybeBool
+  , ifilterDefault
+  , ifilterDefaultPartition
+  , ifilterDefaultPartitionMap
+  , ifilterMapDefault
+  , icleared
   , module Data.Compactable
   ) where
 
@@ -60,6 +76,9 @@ ipartitionMapDefault p = separate <<< mapWithIndex p
 
 ipartitionDefault :: forall f i a. FilterableWithIndex i f => (i -> a -> Boolean) -> f a -> { no :: f a, yes :: f a }
 ipartitionDefault p xs = let o = ipartitionMap (ieitherBool p) xs in {no: o.left, yes: o.right}
+
+ipartitionDefaultFilter :: forall f a i. FilterableWithIndex i f => (i -> a -> Boolean) -> f a -> { no :: f a, yes :: f a }
+ipartitionDefaultFilter p xs = { yes: ifilter p xs, no: ifilter (not p) xs }
 
 ifilterMapDefault :: forall f i a b. FilterableWithIndex i f => (i -> a -> Maybe b) -> f a -> f b
 ifilterMapDefault p = compact <<< mapWithIndex p
