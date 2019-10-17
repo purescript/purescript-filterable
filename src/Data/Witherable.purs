@@ -47,30 +47,37 @@ class (TraversableWithIndex i t, Witherable t) <= WitherableWithIndex i t | t ->
   iwither :: forall m a b. Applicative m =>
     (i -> a -> m (Maybe b)) -> t a -> m (t b)
 
+-- | A default implementation of `iwilt` using `separate`
 iwiltDefault :: forall t m a l r i. WitherableWithIndex i t => Applicative m =>
   (i -> a -> m (Either l r)) -> t a -> m { left :: t l, right :: t r }
 iwiltDefault p = map separate <<< traverseWithIndex p
 
+-- | A default implementation of `iwither` using `compact`.
 iwitherDefault :: forall t m a b i. WitherableWithIndex i t => Applicative m =>
   (i -> a -> m (Maybe b)) -> t a -> m (t b)
 iwitherDefault p = map compact <<< traverseWithIndex p
 
+-- | A default implementation of `ipartitionMap` given a `WitherableWithIndex`.
 ipartitionMapByWilt :: forall t a l r i. WitherableWithIndex i t =>
   (i -> a -> Either l r) -> t a -> { left :: t l, right :: t r }
 ipartitionMapByWilt p = unwrap <<< iwilt (\i a -> Identity (p i a))
 
+-- | A default implementation of `ifilterMap` given a `WitherableWithIndex`.
 ifilterMapByWither :: forall t a b i. WitherableWithIndex i t =>
   (i -> a -> Maybe b) -> t a -> t b
 ifilterMapByWither p = unwrap <<< iwither (\i a -> Identity (p i a))
 
+-- | A default implementation of `itraverse` given a `WitherableWithIndex`.
 itraverseByWither :: forall t m a b i. WitherableWithIndex i t => Applicative m =>
   (i -> a -> m b) -> t a -> m (t b)
 itraverseByWither f = iwither (\i a -> map Just (f i a))
 
+-- | Partition between `Left` and `Right` values - with effects in `m`.
 iwilted :: forall t m l r i. WitherableWithIndex i t => Applicative m =>
   t (m (Either l r)) -> m { left :: t l, right :: t r }
 iwilted = iwilt (\i a -> a)
 
+-- | Filter out all the `Nothing` values - with effects in `m`.
 iwithered :: forall t m x i. WitherableWithIndex i t => Applicative m =>
   t (m (Maybe x)) -> m (t x)
 iwithered = iwither (\i a -> a)

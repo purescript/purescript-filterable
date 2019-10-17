@@ -65,37 +65,64 @@ class (Filterable f, FunctorWithIndex i f) <= FilterableWithIndex i f | f -> i w
   ifilter :: forall a.
     (i -> a -> Boolean) -> f a -> f a
 
-ieitherBool :: forall a i. (i -> a -> Boolean) -> i -> a -> Either a a
+-- | Upgrade a boolean-style predicate to an either-style predicate mapping.
+ieitherBool :: forall a i. 
+  (i -> a -> Boolean) -> i -> a -> Either a a
 ieitherBool p i x = if p i x then Right x else Left x
 
-imaybeBool :: forall a i. (i -> a -> Boolean) -> i -> a -> Maybe a
+-- | Upgrade a boolean-style predicate to a maybe-style predicate mapping.
+imaybeBool :: forall a i. 
+  (i -> a -> Boolean) -> i -> a -> Maybe a
 imaybeBool p i x = if p i x then Just x else Nothing
 
-ipartitionMapDefault :: forall f a l r i. FilterableWithIndex i f => (i -> a -> Either l r) -> f a -> { left :: f l, right :: f r }
+-- | A default implementation of `ipartitionMap` using `separate`. Note that this is
+-- | almost certainly going to be suboptimal compared to direct implementations.
+ipartitionMapDefault :: forall f a l r i. FilterableWithIndex i f => 
+  (i -> a -> Either l r) -> f a -> { left :: f l, right :: f r }
 ipartitionMapDefault p = separate <<< mapWithIndex p
 
-ipartitionDefault :: forall f i a. FilterableWithIndex i f => (i -> a -> Boolean) -> f a -> { no :: f a, yes :: f a }
+-- | A default implementation of `ipartition` using `ipartitionMap`.
+ipartitionDefault :: forall f i a. FilterableWithIndex i f => 
+  (i -> a -> Boolean) -> f a -> { no :: f a, yes :: f a }
 ipartitionDefault p xs = let o = ipartitionMap (ieitherBool p) xs in {no: o.left, yes: o.right}
 
-ipartitionDefaultFilter :: forall f a i. FilterableWithIndex i f => (i -> a -> Boolean) -> f a -> { no :: f a, yes :: f a }
+-- | A default implementation of `ipartition` using `ifilter`. Note that this is
+-- | almost certainly going to be suboptimal compared to direct implementations.
+ipartitionDefaultFilter :: forall f a i. FilterableWithIndex i f => 
+  (i -> a -> Boolean) -> f a -> { no :: f a, yes :: f a }
 ipartitionDefaultFilter p xs = { yes: ifilter p xs, no: ifilter (not p) xs }
 
-ifilterMapDefault :: forall f i a b. FilterableWithIndex i f => (i -> a -> Maybe b) -> f a -> f b
+-- | A default implementation of `ifilterMap` using `separate`. Note that this is
+-- | almost certainly going to be suboptimal compared to direct implementations.
+ifilterMapDefault :: forall f i a b. FilterableWithIndex i f => 
+  (i -> a -> Maybe b) -> f a -> f b
 ifilterMapDefault p = compact <<< mapWithIndex p
 
-ipartitionDefaultFilterMap :: forall f i a. FilterableWithIndex i f => (i -> a -> Boolean) -> f a -> { no :: f a, yes :: f a }
+-- | A default implementation of `ipartition` using `ifilterMap`. Note that this
+-- | is almost certainly going to be suboptimal compared to direct
+-- | implementations.
+ipartitionDefaultFilterMap :: forall f i a. FilterableWithIndex i f => 
+  (i -> a -> Boolean) -> f a -> { no :: f a, yes :: f a }
 ipartitionDefaultFilterMap p xs = {yes: ifilterMap (imaybeBool p) xs, no: ifilterMap (imaybeBool (not p)) xs}
 
-ifilterDefault :: forall f i a. FilterableWithIndex i f => (i -> a -> Boolean) -> f a -> f a
+-- | A default implementation of `ifilter` using `ifilterMap`.
+ifilterDefault :: forall f i a. FilterableWithIndex i f => 
+  (i -> a -> Boolean) -> f a -> f a
 ifilterDefault = ifilterMap <<< imaybeBool
 
-ifilterDefaultPartition :: forall f i a. FilterableWithIndex i f => (i -> a -> Boolean) -> f a -> f a
+-- | A default implementation of `ifilter` using `ipartition`.
+ifilterDefaultPartition :: forall f i a. FilterableWithIndex i f => 
+  (i -> a -> Boolean) -> f a -> f a
 ifilterDefaultPartition p xs = (ipartition p xs).yes
 
-ifilterDefaultPartitionMap :: forall f i a. FilterableWithIndex i f => (i -> a -> Boolean) -> f a -> f a
+-- | A default implementation of `ifilter` using `ipartitionMap`.
+ifilterDefaultPartitionMap :: forall f i a. FilterableWithIndex i f => 
+  (i -> a -> Boolean) -> f a -> f a
 ifilterDefaultPartitionMap p xs = (ipartitionMap (ieitherBool p) xs).right
 
-icleared :: forall f i a b. FilterableWithIndex i f => f a -> f b
+-- | Filter out all values.
+icleared :: forall f i a b. FilterableWithIndex i f => 
+  f a -> f b
 icleared = ifilterMap \i a -> Nothing
 
 instance filterableWithIndexArray :: FilterableWithIndex Int Array where
