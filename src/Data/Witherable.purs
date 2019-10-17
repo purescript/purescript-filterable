@@ -26,8 +26,48 @@ import Data.Maybe (Maybe(..))
 import Data.Monoid (class Monoid, mempty)
 import Data.Newtype (unwrap)
 import Data.Traversable (class Traversable, traverse)
+import Data.TraversableWithIndex (class TraversableWithIndex, traverseWithIndex)
 import Data.Tuple (Tuple(..))
 import Prelude (class Ord)
+
+class (TraversableWithIndex i t, Witherable t) <= WitherableWithIndex i t | t -> i where
+  iwilt :: forall m a l r. Applicative m =>
+    (i -> a -> m (Either l r)) -> t a -> m { left :: t l, right :: t r }
+
+  iwither :: forall m a b. Applicative m =>
+    (i -> a -> m (Maybe b)) -> t a -> m (t b)
+
+iwiltDefault :: forall t m a l r i. WitherableWithIndex i t => Applicative m =>
+  (i -> a -> m (Either l r)) -> t a -> m { left :: t l, right :: t r }
+iwiltDefault p = map separate <<< traverseWithIndex p
+
+iwitherDefault :: forall t m a b i. WitherableWithIndex i t => Applicative m =>
+  (i -> a -> m (Maybe b)) -> t a -> m (t b)
+iwitherDefault p = map compact <<< traverseWithIndex p
+
+ipartitionMapByWilt :: forall t a l r i. WitherableWithIndex i t =>
+  (i -> a -> Either l r) -> t a -> { left :: t l, right :: t r }
+ipartitionMapByWilt p = unwrap <<< iwilt (\i a -> Identity (p i a))
+
+ifilterMapByWither :: forall t a b i. WitherableWithIndex i t =>
+  (i -> a -> Maybe b) -> t a -> t b
+ifilterMapByWither p = unwrap <<< iwither (\i a -> Identity (p i a))
+
+itraverseByWither :: forall t m a b i. WitherableWithIndex i t => Applicative m =>
+  (i -> a -> m b) -> t a -> m (t b)
+itraverseByWither f = iwither (\i a -> map Just (f i a))
+
+iwilted :: forall t m l r i. WitherableWithIndex i t => Applicative m =>
+  t (m (Either l r)) -> m { left :: t l, right :: t r }
+iwilted = iwilt (\i a -> a)
+
+iwithered :: forall t m x i. WitherableWithIndex i t => Applicative m =>
+  t (m (Maybe x)) -> m (t x)
+iwithered = iwither (\i a -> a)
+
+instance iwitherableArray :: WitherableWithIndex Int Array where
+  iwilt = iwiltDefault
+  iwither = iwitherDefault
 
 -- | `Witherable` represents data structures which can be _partitioned_ with
 -- | effects in some `Applicative` functor.
