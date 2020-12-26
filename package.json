@@ -7,8 +7,8 @@
     "build:docs": "rimraf docs && pulp docs"
   },
   "devDependencies": {
-    "pulp": "^12.2.0",
-    "purescript-psa": "^0.6.0",
-    "rimraf": "^2.6.2"
+    "pulp": "^15.0.0",
+    "purescript-psa": "^0.8.0",
+    "rimraf": "^3.0.2"
   }
 }
