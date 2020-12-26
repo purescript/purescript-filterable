@@ -105,7 +105,7 @@ instance compactableEither :: Monoid m => Compactable (Either m) where
 
 instance compactableArray :: Compactable Array where
   compact xs = ST.run do
-    result <- STA.empty
+    result <- STA.new
     iter   <- STAI.iterator (xs !! _)
 
     STAI.iterate iter $ void <<< case _ of
@@ -115,8 +115,8 @@ instance compactableArray :: Compactable Array where
     STA.unsafeFreeze result
 
   separate xs = ST.run do
-    ls <- STA.empty
-    rs <- STA.empty
+    ls <- STA.new
+    rs <- STA.new
     iter <- STAI.iterator (xs !! _)
 
     STAI.iterate iter $ void <<< case _ of
