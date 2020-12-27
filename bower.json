@@ -6,7 +6,7 @@
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "git://github.com/LiamGoodacre/purescript-filterable.git"
+    "url": "https://github.com/LiamGoodacre/purescript-filterable.git"
   },
   "ignore": [
     "**/.*",
@@ -18,15 +18,15 @@
     "package.json"
   ],
   "dependencies": {
-    "purescript-foldable-traversable": "^4.0.0",
-    "purescript-identity": "^4.0.0",
-    "purescript-arrays": "^5.0.0",
-    "purescript-either": "^4.0.0",
-    "purescript-lists": "^5.0.0",
-    "purescript-ordered-collections": "^1.0.0"
+    "purescript-foldable-traversable": "master",
+    "purescript-identity": "master",
+    "purescript-arrays": "master",
+    "purescript-either": "master",
+    "purescript-lists": "master",
+    "purescript-ordered-collections": "master"
   },
   "devDependencies": {
-    "purescript-assert": "^4.0.0",
-    "purescript-console": "^4.0.0"
+    "purescript-assert": "master",
+    "purescript-console": "master"
   }
 }
