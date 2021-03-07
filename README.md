@@ -1,19 +1,21 @@
-# purescript-filterable
+# Filterable
 
-[![Build status](https://travis-ci.org/LiamGoodacre/purescript-filterable.svg?branch=master)](https://travis-ci.org/LiamGoodacre/purescript-filterable)
+[![CI](https://github.com/purescript/purescript-filterable/workflows/CI/badge.svg?branch=master)](https://github.com/purescript/purescript-filterable/actions?query=workflow%3ACI+branch%3Amaster)
+[![Release](https://img.shields.io/github/release/purescript/purescript-filterable.svg)](https://github.com/purescript/purescript-filterable/releases)
+[![Pursuit](https://pursuit.purescript.org/packages/purescript-filterable/badge)](https://pursuit.purescript.org/packages/purescript-filterable)
 
-Classes for *compactable*, *filterable*, and *witherable* data structures.
+Classes for _compactable_, _filterable_, and _witherable_ data structures.
 
 Inspired by [compactable](https://hackage.haskell.org/package/compactable) and [witherable](https://hackage.haskell.org/package/witherable) on hackage.
 
 ## Installation
 
-```
-bower install purescript-filterable
+Install `filterable` with [Spago](https://github.com/purescript/spago):
+
+```sh
+spago install filterable
 ```
 
 ## Documentation
 
-See on [Pursuit](https://pursuit.purescript.org/packages/purescript-filterable/).
-
-Or build docs with `npm run build:docs`.
+Module documentation is [published on Pursuit](https://pursuit.purescript.org/packages/purescript-filterable).

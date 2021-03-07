@@ -1,12 +1,12 @@
 {
   "name": "purescript-filterable",
-  "homepage": "https://github.com/LiamGoodacre/purescript-filterable",
+  "homepage": "https://github.com/purescript/purescript-filterable",
   "description": "Classes for filterable and witherable data structures",
   "author": "Liam Goodacre",
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "https://github.com/LiamGoodacre/purescript-filterable.git"
+    "url": "https://github.com/purescript/purescript-filterable.git"
   },
   "ignore": [
     "**/.*",
