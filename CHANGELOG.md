@@ -6,13 +6,15 @@ Notable changes to this project are documented in this file. The format is based
 
 Breaking changes:
 
-- Added support for PureScript 0.14 and dropped support for all previous versions
-
 New features:
 
 Bugfixes:
 
 Other improvements:
+
+## [v4.0.0](https://github.com/purescript/purescript-filterable/releases/tag/v4.0.0) - 2021-03-07
+
+- Added support for PureScript 0.14 and dropped support for all previous versions.
 
 ## [v3.0.1](https://github.com/purescript/purescript-filterable/releases/tag/v3.0.1) - 2018-06-29
 
