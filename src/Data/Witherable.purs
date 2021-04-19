@@ -142,21 +142,21 @@ instance witherableMap :: Ord k => Witherable (Map.Map k) where
         ) <$> acc <*> p x
 
 instance witherableMaybe :: Witherable Maybe where
-  wilt p Nothing = pure { left: Nothing, right: Nothing }
+  wilt _ Nothing = pure { left: Nothing, right: Nothing }
   wilt p (Just x) = map convert (p x) where
     convert (Left l) = { left: Just l, right: Nothing }
     convert (Right r) = { left: Nothing, right: Just r }
 
-  wither p Nothing = pure Nothing
+  wither _ Nothing = pure Nothing
   wither p (Just x) = p x
 
 instance witherableEither :: Monoid m => Witherable (Either m) where
-  wilt p (Left el) = pure { left: Left el, right: Left el }
+  wilt _ (Left el) = pure { left: Left el, right: Left el }
   wilt p (Right er) = map convert (p er) where
     convert (Left l) = { left: Right l, right: Left mempty }
     convert (Right r) = { left: Left mempty, right: Right r }
 
-  wither p (Left el) = pure (Left el)
+  wither _ (Left el) = pure (Left el)
   wither p (Right er) = map convert (p er) where
     convert Nothing = Left mempty
     convert (Just r) = Right r
