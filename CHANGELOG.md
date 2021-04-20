@@ -15,6 +15,7 @@ Other improvements:
 ## [v4.0.1](https://github.com/purescript/purescript-filterable/releases/tag/v4.0.1) - 2021-04-19
 
 Other improvements:
+- Renamed default branch to `main` from `master` (@thomashoneyman)
 - Fix UnusedName warnings revealed by v0.14.1 PureScript release (#22 by @JordanMartinez)
 
 ## [v4.0.0](https://github.com/purescript/purescript-filterable/releases/tag/v4.0.0) - 2021-03-07
