@@ -1,6 +1,6 @@
 # Filterable
 
-[![CI](https://github.com/purescript/purescript-filterable/workflows/CI/badge.svg?branch=master)](https://github.com/purescript/purescript-filterable/actions?query=workflow%3ACI+branch%3Amaster)
+[![CI](https://github.com/purescript/purescript-filterable/workflows/CI/badge.svg?branch=main)](https://github.com/purescript/purescript-filterable/actions?query=workflow%3ACI+branch%3Amain)
 [![Release](https://img.shields.io/github/release/purescript/purescript-filterable.svg)](https://github.com/purescript/purescript-filterable/releases)
 [![Pursuit](https://pursuit.purescript.org/packages/purescript-filterable/badge)](https://pursuit.purescript.org/packages/purescript-filterable)
 
