@@ -157,7 +157,7 @@ instance filterableArray :: Filterable Array where
   filter = Array.filter
 
 instance filterableMaybe :: Filterable Maybe where
-  partitionMap p Nothing = { left: Nothing, right: Nothing }
+  partitionMap _ Nothing = { left: Nothing, right: Nothing }
   partitionMap p (Just x) = case p x of
     Left a -> { left: Just a, right: Nothing }
     Right b -> { left: Nothing, right: Just b }
@@ -169,14 +169,14 @@ instance filterableMaybe :: Filterable Maybe where
   filter p = filterDefault p
 
 instance filterableEither :: Monoid m => Filterable (Either m) where
-  partitionMap p (Left x) = { left: Left x, right: Left x }
+  partitionMap _ (Left x) = { left: Left x, right: Left x }
   partitionMap p (Right x) = case p x of
     Left a -> { left: Right a, right: Left mempty }
     Right b -> { left: Left mempty, right: Right b }
 
   partition p = partitionDefault p
 
-  filterMap p (Left l) = Left l
+  filterMap _ (Left l) = Left l
   filterMap p (Right r) = case p r of
     Nothing -> Left mempty
     Just x -> Right x
