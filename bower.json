@@ -18,15 +18,15 @@
     "package.json"
   ],
   "dependencies": {
-    "purescript-foldable-traversable": "master",
-    "purescript-identity": "master",
-    "purescript-arrays": "master",
-    "purescript-either": "master",
-    "purescript-lists": "master",
-    "purescript-ordered-collections": "master"
+    "purescript-foldable-traversable": "^6.0.0",
+    "purescript-identity": "^6.0.0",
+    "purescript-arrays": "^7.0.0",
+    "purescript-either": "^6.0.0",
+    "purescript-lists": "^7.0.0",
+    "purescript-ordered-collections": "^3.0.0"
   },
   "devDependencies": {
-    "purescript-assert": "master",
-    "purescript-console": "master"
+    "purescript-assert": "^6.0.0",
+    "purescript-console": "^6.0.0"
   }
 }
