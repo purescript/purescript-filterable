@@ -15,6 +15,22 @@ module Data.Filterable
   , filterDefaultPartitionMap
   , filterMapDefault
   , cleared
+  , class FilterableWithIndex
+  , ipartitionMap
+  , ipartition
+  , ifilterMap
+  , ifilter
+  , ieitherBool
+  , ipartitionDefault
+  , ipartitionDefaultFilter
+  , ipartitionDefaultFilterMap
+  , ipartitionMapDefault
+  , imaybeBool
+  , ifilterDefault
+  , ifilterDefaultPartition
+  , ifilterDefaultPartitionMap
+  , ifilterMapDefault
+  , icleared
   , module Data.Compactable
   ) where
 
@@ -24,7 +40,9 @@ import Data.Array (partition, mapMaybe, filter) as Array
 import Data.Compactable (class Compactable, compact, separate)
 import Data.Either (Either(..))
 import Data.Foldable (foldl, foldr)
+import Data.FoldableWithIndex (foldlWithIndex)
 import Data.Functor (class Functor, map)
+import Data.FunctorWithIndex (class FunctorWithIndex, mapWithIndex)
 import Data.HeytingAlgebra (not)
 import Data.List (List(..), filter, mapMaybe) as List
 import Data.Map (Map, empty, insert, alter, toUnfoldable) as Map
@@ -33,6 +51,88 @@ import Data.Monoid (class Monoid, mempty)
 import Data.Semigroup ((<>))
 import Data.Tuple (Tuple(..))
 import Prelude (const, class Ord)
+
+class (Filterable f, FunctorWithIndex i f) <= FilterableWithIndex i f | f -> i where
+  ipartitionMap :: forall a l r.
+    (i -> a -> Either l r) -> f a -> { left :: f l, right :: f r }
+
+  ipartition :: forall a.
+    (i -> a -> Boolean) -> f a -> { no :: f a, yes :: f a }
+
+  ifilterMap :: forall a b.
+    (i -> a -> Maybe b) -> f a -> f b
+
+  ifilter :: forall a.
+    (i -> a -> Boolean) -> f a -> f a
+
+-- | Upgrade a boolean-style predicate to an either-style predicate mapping.
+ieitherBool :: forall a i. 
+  (i -> a -> Boolean) -> i -> a -> Either a a
+ieitherBool p i x = if p i x then Right x else Left x
+
+-- | Upgrade a boolean-style predicate to a maybe-style predicate mapping.
+imaybeBool :: forall a i. 
+  (i -> a -> Boolean) -> i -> a -> Maybe a
+imaybeBool p i x = if p i x then Just x else Nothing
+
+-- | A default implementation of `ipartitionMap` using `separate`. Note that this is
+-- | almost certainly going to be suboptimal compared to direct implementations.
+ipartitionMapDefault :: forall f a l r i. FilterableWithIndex i f => 
+  (i -> a -> Either l r) -> f a -> { left :: f l, right :: f r }
+ipartitionMapDefault p = separate <<< mapWithIndex p
+
+-- | A default implementation of `ipartition` using `ipartitionMap`.
+ipartitionDefault :: forall f i a. FilterableWithIndex i f => 
+  (i -> a -> Boolean) -> f a -> { no :: f a, yes :: f a }
+ipartitionDefault p xs = let o = ipartitionMap (ieitherBool p) xs in {no: o.left, yes: o.right}
+
+-- | A default implementation of `ipartition` using `ifilter`. Note that this is
+-- | almost certainly going to be suboptimal compared to direct implementations.
+ipartitionDefaultFilter :: forall f a i. FilterableWithIndex i f => 
+  (i -> a -> Boolean) -> f a -> { no :: f a, yes :: f a }
+ipartitionDefaultFilter p xs = { yes: ifilter p xs, no: ifilter (not p) xs }
+
+-- | A default implementation of `ifilterMap` using `separate`. Note that this is
+-- | almost certainly going to be suboptimal compared to direct implementations.
+ifilterMapDefault :: forall f i a b. FilterableWithIndex i f => 
+  (i -> a -> Maybe b) -> f a -> f b
+ifilterMapDefault p = compact <<< mapWithIndex p
+
+-- | A default implementation of `ipartition` using `ifilterMap`. Note that this
+-- | is almost certainly going to be suboptimal compared to direct
+-- | implementations.
+ipartitionDefaultFilterMap :: forall f i a. FilterableWithIndex i f => 
+  (i -> a -> Boolean) -> f a -> { no :: f a, yes :: f a }
+ipartitionDefaultFilterMap p xs = {yes: ifilterMap (imaybeBool p) xs, no: ifilterMap (imaybeBool (not p)) xs}
+
+-- | A default implementation of `ifilter` using `ifilterMap`.
+ifilterDefault :: forall f i a. FilterableWithIndex i f => 
+  (i -> a -> Boolean) -> f a -> f a
+ifilterDefault = ifilterMap <<< imaybeBool
+
+-- | A default implementation of `ifilter` using `ipartition`.
+ifilterDefaultPartition :: forall f i a. FilterableWithIndex i f => 
+  (i -> a -> Boolean) -> f a -> f a
+ifilterDefaultPartition p xs = (ipartition p xs).yes
+
+-- | A default implementation of `ifilter` using `ipartitionMap`.
+ifilterDefaultPartitionMap :: forall f i a. FilterableWithIndex i f => 
+  (i -> a -> Boolean) -> f a -> f a
+ifilterDefaultPartitionMap p xs = (ipartitionMap (ieitherBool p) xs).right
+
+-- | Filter out all values.
+icleared :: forall f i a b. FilterableWithIndex i f => 
+  f a -> f b
+icleared = ifilterMap \i a -> Nothing
+
+instance filterableWithIndexArray :: FilterableWithIndex Int Array where
+  ipartitionMap p = foldlWithIndex go {left: [], right: []} where
+      go i acc x = case p i x of
+        Left l -> acc { left = acc.left <> [l] }
+        Right r -> acc { right = acc.right <> [r] }
+  ipartition p = ipartitionDefault p
+  ifilterMap p = ifilterMapDefault p
+  ifilter p = ifilterDefault p
 
 -- | `Filterable` represents data structures which can be _partitioned_/_filtered_.
 -- |
