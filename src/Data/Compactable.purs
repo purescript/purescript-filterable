@@ -64,53 +64,66 @@ import Prelude (class Ord, const, discard, unit, void, (<<<))
 -- | - `compact (const Nothing <$> xs) ≡ empty`
 
 class Compactable f where
-  compact :: forall a.
-    f (Maybe a) -> f a
+  compact
+    :: forall a
+     . f (Maybe a)
+    -> f a
 
-  separate :: forall l r.
-    f (Either l r) -> { left :: f l, right :: f r }
+  separate
+    :: forall l r
+     . f (Either l r)
+    -> { left :: f l, right :: f r }
 
-compactDefault :: forall f a. Functor f => Compactable f =>
-  f (Maybe a) -> f a
+compactDefault
+  :: forall f a
+   . Functor f
+  => Compactable f
+  => f (Maybe a)
+  -> f a
 compactDefault = _.right <<< separate <<< map (note unit)
 
-separateDefault :: forall f l r. Functor f => Compactable f =>
-  f (Either l r) -> { left :: f l, right :: f r}
-separateDefault xs = { left: compact $ (hush <<< swapEither) <$> xs
-                     , right: compact $ hush <$> xs
-                     }
+separateDefault
+  :: forall f l r
+   . Functor f
+  => Compactable f
+  => f (Either l r)
+  -> { left :: f l, right :: f r }
+separateDefault xs =
+  { left: compact $ (hush <<< swapEither) <$> xs
+  , right: compact $ hush <$> xs
+  }
   where
-    swapEither e = case e of
-      Left x  -> Right x
-      Right y -> Left y
+  swapEither e = case e of
+    Left x -> Right x
+    Right y -> Left y
 
 instance compactableMaybe :: Compactable Maybe where
   compact = join
 
   separate Nothing = { left: Nothing, right: Nothing }
   separate (Just e) = case e of
-    Left l  -> { left: Just l, right: Nothing }
+    Left l -> { left: Just l, right: Nothing }
     Right r -> { left: Nothing, right: Just r }
 
 instance compactableEither :: Monoid m => Compactable (Either m) where
   compact (Left m) = Left m
   compact (Right m) = case m of
-    Just v  -> Right v
+    Just v -> Right v
     Nothing -> Left mempty
 
   separate (Left x) = { left: Left x, right: Left x }
   separate (Right e) = case e of
-    Left l  -> { left: Right l, right: Left mempty }
+    Left l -> { left: Right l, right: Left mempty }
     Right r -> { left: Left mempty, right: Right r }
 
 instance compactableArray :: Compactable Array where
   compact xs = ST.run do
     result <- STA.new
-    iter   <- STAI.iterator (xs !! _)
+    iter <- STAI.iterator (xs !! _)
 
     STAI.iterate iter $ void <<< case _ of
       Nothing -> pure 0
-      Just j  -> STA.push j result
+      Just j -> STA.push j result
 
     STA.unsafeFreeze result
 
@@ -120,45 +133,69 @@ instance compactableArray :: Compactable Array where
     iter <- STAI.iterator (xs !! _)
 
     STAI.iterate iter $ void <<< case _ of
-      Left l  -> STA.push l ls
+      Left l -> STA.push l ls
       Right r -> STA.push r rs
 
-    {left: _, right: _} <$> STA.unsafeFreeze ls <*> STA.unsafeFreeze rs
+    { left: _, right: _ } <$> STA.unsafeFreeze ls <*> STA.unsafeFreeze rs
 
 instance compactableList :: Compactable List.List where
   compact = List.catMaybes
-  separate = foldl go { left: empty, right: empty } where
+  separate = foldl go { left: empty, right: empty }
+    where
     go acc = case _ of
-      Left l  -> acc { left = acc.left <|> pure l }
+      Left l -> acc { left = acc.left <|> pure l }
       Right r -> acc { right = acc.right <|> pure r }
 
 instance compactableMap :: Ord k => Compactable (Map.Map k) where
   compact = foldr select Map.empty <<< mapToList
     where
-      select (Tuple k x) m = Map.alter (const x) k m
+    select (Tuple k x) m = Map.alter (const x) k m
 
   separate = foldr select { left: Map.empty, right: Map.empty } <<< mapToList
     where
-      select (Tuple k v) { left, right } = case v of
-        Left l -> { left: Map.insert k l left, right }
-        Right r -> { left: left, right: Map.insert k r right }
+    select (Tuple k v) { left, right } = case v of
+      Left l -> { left: Map.insert k l left, right }
+      Right r -> { left: left, right: Map.insert k r right }
 
-mapToList :: forall k v. Ord k =>
-  Map.Map k v -> List.List (Tuple k v)
+mapToList
+  :: forall k v
+   . Ord k
+  => Map.Map k v
+  -> List.List (Tuple k v)
 mapToList = Map.toUnfoldable
 
-applyMaybe :: forall f a b. Apply f => Compactable f =>
-  f (a -> Maybe b) -> f a -> f b
+applyMaybe
+  :: forall f a b
+   . Apply f
+  => Compactable f
+  => f (a -> Maybe b)
+  -> f a
+  -> f b
 applyMaybe p = compact <<< apply p
 
-applyEither :: forall f a l r. Apply f => Compactable f =>
-  f (a -> Either l r) -> f a -> { left :: f l, right :: f r }
+applyEither
+  :: forall f a l r
+   . Apply f
+  => Compactable f
+  => f (a -> Either l r)
+  -> f a
+  -> { left :: f l, right :: f r }
 applyEither p = separate <<< apply p
 
-bindMaybe :: forall m a b. Bind m => Compactable m =>
-  m a -> (a -> m (Maybe b)) -> m b
+bindMaybe
+  :: forall m a b
+   . Bind m
+  => Compactable m
+  => m a
+  -> (a -> m (Maybe b))
+  -> m b
 bindMaybe x = compact <<< bind x
 
-bindEither :: forall m a l r. Bind m => Compactable m =>
-  m a -> (a -> m (Either l r)) -> { left :: m l, right :: m r }
+bindEither
+  :: forall m a l r
+   . Bind m
+  => Compactable m
+  => m a
+  -> (a -> m (Either l r))
+  -> { left :: m l, right :: m r }
 bindEither x = separate <<< bind x

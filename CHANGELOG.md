@@ -11,6 +11,7 @@ Other improvements:
 ## [v5.0.0](https://github.com/purescript/purescript-filterable/releases/tag/v5.0.0) - 2022-04-27
 
 Breaking changes:
+
 - Update project and deps to PureScript v0.15.0 (#23 by @JordanMartinez)
 
 New features:
@@ -22,6 +23,7 @@ Other improvements:
 ## [v4.0.1](https://github.com/purescript/purescript-filterable/releases/tag/v4.0.1) - 2021-04-19
 
 Other improvements:
+
 - Renamed default branch to `main` from `master` (@thomashoneyman)
 - Fix UnusedName warnings revealed by v0.14.1 PureScript release (#22 by @JordanMartinez)
 

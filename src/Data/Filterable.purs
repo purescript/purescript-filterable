@@ -20,19 +20,19 @@ module Data.Filterable
 
 import Control.Bind ((=<<))
 import Control.Category ((<<<))
-import Data.Array (partition, mapMaybe, filter) as Array
+import Data.Array (filter, mapMaybe, partition) as Array
 import Data.Compactable (class Compactable, compact, separate)
 import Data.Either (Either(..))
 import Data.Foldable (foldl, foldr)
 import Data.Functor (class Functor, map)
 import Data.HeytingAlgebra (not)
 import Data.List (List(..), filter, mapMaybe) as List
-import Data.Map (Map, empty, insert, alter, toUnfoldable) as Map
+import Data.Map (Map, alter, empty, insert, toUnfoldable) as Map
 import Data.Maybe (Maybe(..))
 import Data.Monoid (class Monoid, mempty)
 import Data.Semigroup ((<>))
 import Data.Tuple (Tuple(..))
-import Prelude (const, class Ord)
+import Prelude (class Ord, const)
 
 -- | `Filterable` represents data structures which can be _partitioned_/_filtered_.
 -- |
@@ -67,88 +67,144 @@ import Prelude (const, class Ord)
 -- | - `filterDefaultPartitionMap`
 -- | - `filterMapDefault`
 class (Compactable f, Functor f) <= Filterable f where
-  partitionMap :: forall a l r.
-    (a -> Either l r) -> f a -> { left :: f l, right :: f r }
+  partitionMap
+    :: forall a l r
+     . (a -> Either l r)
+    -> f a
+    -> { left :: f l, right :: f r }
 
-  partition :: forall a.
-    (a -> Boolean) -> f a -> { no :: f a, yes :: f a }
+  partition
+    :: forall a
+     . (a -> Boolean)
+    -> f a
+    -> { no :: f a, yes :: f a }
 
-  filterMap :: forall a b.
-    (a -> Maybe b) -> f a -> f b
+  filterMap
+    :: forall a b
+     . (a -> Maybe b)
+    -> f a
+    -> f b
 
-  filter :: forall a.
-    (a -> Boolean) -> f a -> f a
+  filter
+    :: forall a
+     . (a -> Boolean)
+    -> f a
+    -> f a
 
 -- | Upgrade a boolean-style predicate to an either-style predicate mapping.
-eitherBool :: forall a.
-  (a -> Boolean) -> a -> Either a a
+eitherBool
+  :: forall a
+   . (a -> Boolean)
+  -> a
+  -> Either a a
 eitherBool p x = if p x then Right x else Left x
 
 -- | Upgrade a boolean-style predicate to a maybe-style predicate mapping.
-maybeBool :: forall a.
-  (a -> Boolean) -> a -> Maybe a
+maybeBool
+  :: forall a
+   . (a -> Boolean)
+  -> a
+  -> Maybe a
 maybeBool p x = if p x then Just x else Nothing
 
 -- | A default implementation of `partitionMap` using `separate`. Note that this is
 -- | almost certainly going to be suboptimal compared to direct implementations.
-partitionMapDefault :: forall f a l r. Filterable f =>
-  (a -> Either l r) -> f a -> { left :: f l, right :: f r }
+partitionMapDefault
+  :: forall f a l r
+   . Filterable f
+  => (a -> Either l r)
+  -> f a
+  -> { left :: f l, right :: f r }
 partitionMapDefault p = separate <<< map p
 
 -- | A default implementation of `partition` using `partitionMap`.
-partitionDefault :: forall f a. Filterable f =>
-  (a -> Boolean) -> f a -> { no :: f a, yes :: f a }
+partitionDefault
+  :: forall f a
+   . Filterable f
+  => (a -> Boolean)
+  -> f a
+  -> { no :: f a, yes :: f a }
 partitionDefault p xs =
-  let o = partitionMap (eitherBool p) xs
-  in {no: o.left, yes: o.right}
+  let
+    o = partitionMap (eitherBool p) xs
+  in
+    { no: o.left, yes: o.right }
 
 -- | A default implementation of `partition` using `filter`. Note that this is
 -- | almost certainly going to be suboptimal compared to direct implementations.
-partitionDefaultFilter :: forall f a. Filterable f =>
-  (a -> Boolean) -> f a -> { no :: f a, yes :: f a }
+partitionDefaultFilter
+  :: forall f a
+   . Filterable f
+  => (a -> Boolean)
+  -> f a
+  -> { no :: f a, yes :: f a }
 partitionDefaultFilter p xs = { yes: filter p xs, no: filter (not p) xs }
 
 -- | A default implementation of `filterMap` using `separate`. Note that this is
 -- | almost certainly going to be suboptimal compared to direct implementations.
-filterMapDefault :: forall f a b. Filterable f =>
-  (a -> Maybe b) -> f a -> f b
+filterMapDefault
+  :: forall f a b
+   . Filterable f
+  => (a -> Maybe b)
+  -> f a
+  -> f b
 filterMapDefault p = compact <<< map p
 
 -- | A default implementation of `partition` using `filterMap`. Note that this
 -- | is almost certainly going to be suboptimal compared to direct
 -- | implementations.
-partitionDefaultFilterMap :: forall f a. Filterable f =>
-  (a -> Boolean) -> f a -> { no :: f a, yes :: f a }
+partitionDefaultFilterMap
+  :: forall f a
+   . Filterable f
+  => (a -> Boolean)
+  -> f a
+  -> { no :: f a, yes :: f a }
 partitionDefaultFilterMap p xs =
   { yes: filterMap (maybeBool p) xs
   , no: filterMap (maybeBool (not p)) xs
   }
 
 -- | A default implementation of `filter` using `filterMap`.
-filterDefault :: forall f a. Filterable f =>
-  (a -> Boolean) -> f a -> f a
+filterDefault
+  :: forall f a
+   . Filterable f
+  => (a -> Boolean)
+  -> f a
+  -> f a
 filterDefault = filterMap <<< maybeBool
 
 -- | A default implementation of `filter` using `partition`.
-filterDefaultPartition :: forall f a. Filterable f =>
-  (a -> Boolean) -> f a -> f a
+filterDefaultPartition
+  :: forall f a
+   . Filterable f
+  => (a -> Boolean)
+  -> f a
+  -> f a
 filterDefaultPartition p xs = (partition p xs).yes
 
 -- | A default implementation of `filter` using `partitionMap`.
-filterDefaultPartitionMap :: forall f a. Filterable f =>
-  (a -> Boolean) -> f a -> f a
+filterDefaultPartitionMap
+  :: forall f a
+   . Filterable f
+  => (a -> Boolean)
+  -> f a
+  -> f a
 filterDefaultPartitionMap p xs = (partitionMap (eitherBool p) xs).right
 
 -- | Filter out all values.
-cleared :: forall f a b. Filterable f =>
-  f a -> f b
+cleared
+  :: forall f a b
+   . Filterable f
+  => f a
+  -> f b
 cleared = filterMap (const Nothing)
 
 instance filterableArray :: Filterable Array where
-  partitionMap p = foldl go {left: [], right: []} where
+  partitionMap p = foldl go { left: [], right: [] }
+    where
     go acc x = case p x of
-      Left l -> acc { left = acc.left <> [l] }
-      Right r -> acc { right = acc.right <> [r] }
+      Left l -> acc { left = acc.left <> [ l ] }
+      Right r -> acc { right = acc.right <> [ r ] }
 
   partition = Array.partition
 
@@ -187,17 +243,17 @@ instance filterableList :: Filterable List.List where
   -- partitionMap :: forall a l r. (a -> Either l r) -> List a -> { left :: List l, right :: List r }
   partitionMap p xs = foldr select { left: List.Nil, right: List.Nil } xs
     where
-        select x { left, right } = case p x of
-                                     Left l -> { left: List.Cons l left, right }
-                                     Right r -> { left, right: List.Cons r right }
+    select x { left, right } = case p x of
+      Left l -> { left: List.Cons l left, right }
+      Right r -> { left, right: List.Cons r right }
 
   -- partition :: forall a. (a -> Boolean) -> List a -> { no :: List a, yes :: List a }
   partition p xs = foldr select { no: List.Nil, yes: List.Nil } xs
     where
-        -- select :: (a -> Boolean) -> a -> { no :: List a, yes :: List a } -> { no :: List a, yes :: List a }
-        select x { no, yes } = if p x
-                                 then { no, yes: List.Cons x yes }
-                                 else { no: List.Cons x no, yes }
+    -- select :: (a -> Boolean) -> a -> { no :: List a, yes :: List a } -> { no :: List a, yes :: List a }
+    select x { no, yes } =
+      if p x then { no, yes: List.Cons x yes }
+      else { no: List.Cons x no, yes }
 
   -- filterMap :: forall a b. (a -> Maybe b) -> List a -> List b
   filterMap p = List.mapMaybe p
@@ -209,21 +265,21 @@ instance filterableMap :: Ord k => Filterable (Map.Map k) where
   partitionMap p xs =
     foldr select { left: Map.empty, right: Map.empty } (toList xs)
     where
-      toList :: forall v. Map.Map k v -> List.List (Tuple k v)
-      toList = Map.toUnfoldable
+    toList :: forall v. Map.Map k v -> List.List (Tuple k v)
+    toList = Map.toUnfoldable
 
-      select (Tuple k x) { left, right } = case p x of
-        Left l -> { left: Map.insert k l left, right }
-        Right r -> { left, right: Map.insert k r right }
+    select (Tuple k x) { left, right } = case p x of
+      Left l -> { left: Map.insert k l left, right }
+      Right r -> { left, right: Map.insert k r right }
 
   partition p = partitionDefault p
 
   filterMap p xs =
     foldr select Map.empty (toList xs)
     where
-      toList :: forall v. Map.Map k v -> List.List (Tuple k v)
-      toList = Map.toUnfoldable
+    toList :: forall v. Map.Map k v -> List.List (Tuple k v)
+    toList = Map.toUnfoldable
 
-      select (Tuple k x) m = Map.alter (const (p x)) k m
+    select (Tuple k x) m = Map.alter (const (p x)) k m
 
   filter p = filterDefault p
