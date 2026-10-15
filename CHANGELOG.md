@@ -6,7 +6,7 @@ Notable changes to this project are documented in this file. The format is based
 
 Other improvements:
 
-- Migrate from Bower/Pulp to Spago and update CI, tooling, and formatting.
+- Migrate from Bower/Pulp to Spago and update CI, tooling, and formatting (#25 by @thomashoneyman)
 
 ## [v5.0.0](https://github.com/purescript/purescript-filterable/releases/tag/v5.0.0) - 2022-04-27
 
