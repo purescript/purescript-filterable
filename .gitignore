@@ -1,11 +1,13 @@
 .*
 !.gitignore
 !.github
+!/.tidyrc.json
+!/.oxfmtrc.json
 
 output
 generated-docs
 bower_components
 node_modules
 
-package-lock.json
-*.lock
+/package-lock.json
+/spago.lock
