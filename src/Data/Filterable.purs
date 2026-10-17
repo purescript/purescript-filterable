@@ -124,11 +124,9 @@ partitionDefault
   => (a -> Boolean)
   -> f a
   -> { no :: f a, yes :: f a }
-partitionDefault p xs =
-  let
-    o = partitionMap (eitherBool p) xs
-  in
-    { no: o.left, yes: o.right }
+partitionDefault p xs = do
+  let o = partitionMap (eitherBool p) xs
+  { no: o.left, yes: o.right }
 
 -- | A default implementation of `partition` using `filter`. Note that this is
 -- | almost certainly going to be suboptimal compared to direct implementations.
@@ -213,10 +211,11 @@ instance filterableArray :: Filterable Array where
   filter = Array.filter
 
 instance filterableMaybe :: Filterable Maybe where
-  partitionMap _ Nothing = { left: Nothing, right: Nothing }
-  partitionMap p (Just x) = case p x of
-    Left a -> { left: Just a, right: Nothing }
-    Right b -> { left: Nothing, right: Just b }
+  partitionMap p = case _ of
+    Nothing -> { left: Nothing, right: Nothing }
+    Just x -> case p x of
+      Left a -> { left: Just a, right: Nothing }
+      Right b -> { left: Nothing, right: Just b }
 
   partition p = partitionDefault p
 
@@ -225,17 +224,19 @@ instance filterableMaybe :: Filterable Maybe where
   filter p = filterDefault p
 
 instance filterableEither :: Monoid m => Filterable (Either m) where
-  partitionMap _ (Left x) = { left: Left x, right: Left x }
-  partitionMap p (Right x) = case p x of
-    Left a -> { left: Right a, right: Left mempty }
-    Right b -> { left: Left mempty, right: Right b }
+  partitionMap p = case _ of
+    Left x -> { left: Left x, right: Left x }
+    Right x -> case p x of
+      Left a -> { left: Right a, right: Left mempty }
+      Right b -> { left: Left mempty, right: Right b }
 
   partition p = partitionDefault p
 
-  filterMap _ (Left l) = Left l
-  filterMap p (Right r) = case p r of
-    Nothing -> Left mempty
-    Just x -> Right x
+  filterMap p = case _ of
+    Left l -> Left l
+    Right r -> case p r of
+      Nothing -> Left mempty
+      Just x -> Right x
 
   filter p = filterDefault p
 
@@ -252,8 +253,10 @@ instance filterableList :: Filterable List.List where
     where
     -- select :: (a -> Boolean) -> a -> { no :: List a, yes :: List a } -> { no :: List a, yes :: List a }
     select x { no, yes } =
-      if p x then { no, yes: List.Cons x yes }
-      else { no: List.Cons x no, yes }
+      if p x then
+        { no, yes: List.Cons x yes }
+      else
+        { no: List.Cons x no, yes }
 
   -- filterMap :: forall a b. (a -> Maybe b) -> List a -> List b
   filterMap p = List.mapMaybe p

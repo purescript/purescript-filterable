@@ -100,21 +100,24 @@ separateDefault xs =
 instance compactableMaybe :: Compactable Maybe where
   compact = join
 
-  separate Nothing = { left: Nothing, right: Nothing }
-  separate (Just e) = case e of
-    Left l -> { left: Just l, right: Nothing }
-    Right r -> { left: Nothing, right: Just r }
+  separate = case _ of
+    Nothing -> { left: Nothing, right: Nothing }
+    Just e -> case e of
+      Left l -> { left: Just l, right: Nothing }
+      Right r -> { left: Nothing, right: Just r }
 
 instance compactableEither :: Monoid m => Compactable (Either m) where
-  compact (Left m) = Left m
-  compact (Right m) = case m of
-    Just v -> Right v
-    Nothing -> Left mempty
+  compact = case _ of
+    Left m -> Left m
+    Right m -> case m of
+      Just v -> Right v
+      Nothing -> Left mempty
 
-  separate (Left x) = { left: Left x, right: Left x }
-  separate (Right e) = case e of
-    Left l -> { left: Right l, right: Left mempty }
-    Right r -> { left: Left mempty, right: Right r }
+  separate = case _ of
+    Left x -> { left: Left x, right: Left x }
+    Right e -> case e of
+      Left l -> { left: Right l, right: Left mempty }
+      Right r -> { left: Left mempty, right: Right r }
 
 instance compactableArray :: Compactable Array where
   compact xs = ST.run do

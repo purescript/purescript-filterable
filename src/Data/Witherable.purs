@@ -145,21 +145,19 @@ instance witherableList :: Witherable List where
   wilt p = map rev <<< List.foldl go (pure { left: Nil, right: Nil })
     where
     rev { left, right } = { left: List.reverse left, right: List.reverse right }
-    go acc x =
-      ( \{ left, right } ->
-          case _ of
-            Left l -> { left: l : left, right }
-            Right r -> { left, right: r : right }
-      ) <$> acc <*> p x
+    go acc x = add <$> acc <*> p x
+      where
+      add { left, right } = case _ of
+        Left l -> { left: l : left, right }
+        Right r -> { left, right: r : right }
 
   wither p = map List.reverse <<< List.foldl go (pure Nil)
     where
-    go acc x =
-      ( \comp ->
-          case _ of
-            Nothing -> comp
-            Just j -> j : comp
-      ) <$> acc <*> p x
+    go acc x = add <$> acc <*> p x
+      where
+      add comp = case _ of
+        Nothing -> comp
+        Just j -> j : comp
 
 instance witherableMap :: Ord k => Witherable (Map.Map k) where
   wilt p = List.foldl go (pure { left: Map.empty, right: Map.empty }) <<< toList
@@ -167,44 +165,49 @@ instance witherableMap :: Ord k => Witherable (Map.Map k) where
     toList :: forall v. Ord k => Map.Map k v -> List.List (Tuple k v)
     toList = Map.toUnfoldable
 
-    go acc (Tuple k x) =
-      ( \{ left, right } ->
-          case _ of
-            Left l -> { left: Map.insert k l left, right }
-            Right r -> { left, right: Map.insert k r right }
-      ) <$> acc <*> p x
+    go acc (Tuple k x) = add <$> acc <*> p x
+      where
+      add { left, right } = case _ of
+        Left l -> { left: Map.insert k l left, right }
+        Right r -> { left, right: Map.insert k r right }
 
   wither p = List.foldl go (pure Map.empty) <<< toList
     where
     toList :: forall v. Ord k => Map.Map k v -> List.List (Tuple k v)
     toList = Map.toUnfoldable
 
-    go acc (Tuple k x) =
-      ( \comp ->
-          case _ of
-            Nothing -> comp
-            Just j -> Map.insert k j comp
-      ) <$> acc <*> p x
+    go acc (Tuple k x) = add <$> acc <*> p x
+      where
+      add comp = case _ of
+        Nothing -> comp
+        Just j -> Map.insert k j comp
 
 instance witherableMaybe :: Witherable Maybe where
-  wilt _ Nothing = pure { left: Nothing, right: Nothing }
-  wilt p (Just x) = map convert (p x)
+  wilt p = case _ of
+    Nothing -> pure { left: Nothing, right: Nothing }
+    Just x -> map convert (p x)
     where
-    convert (Left l) = { left: Just l, right: Nothing }
-    convert (Right r) = { left: Nothing, right: Just r }
+    convert = case _ of
+      Left l -> { left: Just l, right: Nothing }
+      Right r -> { left: Nothing, right: Just r }
 
-  wither _ Nothing = pure Nothing
-  wither p (Just x) = p x
+  wither p = case _ of
+    Nothing -> pure Nothing
+    Just x -> p x
 
 instance witherableEither :: Monoid m => Witherable (Either m) where
-  wilt _ (Left el) = pure { left: Left el, right: Left el }
-  wilt p (Right er) = map convert (p er)
+  wilt p = case _ of
+    Left el -> pure { left: Left el, right: Left el }
+    Right er -> map convert (p er)
     where
-    convert (Left l) = { left: Right l, right: Left mempty }
-    convert (Right r) = { left: Left mempty, right: Right r }
+    convert = case _ of
+      Left l -> { left: Right l, right: Left mempty }
+      Right r -> { left: Left mempty, right: Right r }
 
-  wither _ (Left el) = pure (Left el)
-  wither p (Right er) = map convert (p er)
+  wither p = case _ of
+    Left el -> pure (Left el)
+    Right er -> map convert (p er)
     where
-    convert Nothing = Left mempty
-    convert (Just r) = Right r
+    convert = case _ of
+      Nothing -> Left mempty
+      Just r -> Right r
